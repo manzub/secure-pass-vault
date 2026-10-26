@@ -1,20 +1,20 @@
 const path = require('node:path');
-const { loadEnvFile } = require('node:process');
 const Fastify = require('fastify');
 const view = require('@fastify/view');
 const nunjucks = require('nunjucks');
 
+// routes
+const landingRoutes = require('./routes/landing-routes');
+
+
 function buildApp() {
-    const app = Fastify({ logger: true });
-    loadEnvFile('./atlas-credentials.env')
+    const fastify = Fastify({ logger: true });
 
-    app.register(view, { engine: { nunjucks }, root: path.join(__dirname, 'views') })
+    fastify.register(require('@fastify/static'), { root: path.join(__dirname, 'public'), prefix: '/public/' })
+    fastify.register(view, { engine: { nunjucks }, root: path.join(__dirname, 'views') })
+    fastify.register(landingRoutes)
 
-    app.get('/', async (request, reply) => {
-        return reply.view('pages/home.njk', { title: process.env.MONGODB_USERNAME })
-    })
-
-    return app;
+    return fastify;
 }
 
 module.exports = buildApp
