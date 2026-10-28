@@ -12,8 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/session": "^11.1.6",
     "@fastify/static": "^10.1.7",
     "@fastify/view": "^12.0.1",
+    "argon2": "^0.45.1",
     "fastify": "^5.12.7",
     "fastify-cli": "^8.0.3",
     "mongodb": "^7.7.0",

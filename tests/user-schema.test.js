@@ -1,6 +1,7 @@
 const test = require("node:test");
+const assert = require("node:assert/strict");
 const fastify = require("fastify");
-const { userSchema } = require('../src/schemas/user-schema')
+const { userSchema } = require('../src/schemas/user-schema');
 
 const app = fastify({})
 app.post('/', { schema: { body: userSchema } }, async function (request, reply) {
@@ -13,7 +14,6 @@ test("Assert valid auth data", async () => {
         url: '/',
         payload: { email: 'aafegsgers@fsf.com', password: '1244533ds354efsd' }
     })
-
     assert.equal(response.statusCode, 200)
 })
 

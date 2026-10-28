@@ -6,10 +6,10 @@ const confSettings = require('./config/config');
 const buildApp = require('./app');
 const mongodbClient = require('./config/database');
 const getCollections = require('./models/collections');
-const createVaultEntriesIndex = require('./config/indexes');
+const { createVaultEntriesIndex, createUsersEmailIndex } = require('./config/indexes');
 
 async function start() {
-    const app = buildApp();
+    let app;
 
     let isShuttingDown = false;
     let isMongoConnected = false;
@@ -47,15 +47,19 @@ async function start() {
 
         const db = mongodbClient.db();
         await db.command({ ping: 1 });
-        app.log.info('MongoDB connection verified');
         
+        // build fastify app and get collections
         const collections = getCollections()
+        app = buildApp(collections)
+        
         app.log.info({
             usersCollectionAvailable: Boolean(collections.usersCollection),
             vaultEntriesCollectionAvailable: Boolean(collections.vaultEntriesCollection)
         });
         await createVaultEntriesIndex(collections.vaultEntriesCollection)
-        app.log.info('verified vault entries index');
+        await createUsersEmailIndex(collections.usersCollection)
+        app.log.info('MongoDB connection verified');
+        app.log.info('verified vaultEntries index && usersEmail index');
 
         const address = await app.listen({
             port: confSettings.port,
