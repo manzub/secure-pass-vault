@@ -28,7 +28,7 @@ function buildApp(collections) {
     fastify.register(view, { engine: { nunjucks }, root: path.join(__dirname, 'views') })
     fastify.register(landingRoutes)
     fastify.register(authRoutes, { usersCollection: collections.usersCollection })
-    fastify.register(vaultEntryRoutes)
+    fastify.register(vaultEntryRoutes, { vaultEntriesCollection: collections.vaultEntriesCollection })
 
     return fastify;
 }

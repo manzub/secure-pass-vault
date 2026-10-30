@@ -69,7 +69,7 @@ async function start() {
         isListening = true;
         app.log.info(`Server listening on ${address}`);
     } catch (error) {
-        app.log.error(error, 'Application startup failed');
+        console.error('Application startup failed', error)
         process.exitCode = 1;
 
         await shutdown();

@@ -2,9 +2,13 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 const confSettings = require("./config");
 
 const mongodbClient = new MongoClient(confSettings.mongodbUri, {
-    serverApi: { 
+    maxPoolSize: 150,
+
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    serverApi: {
         version: ServerApiVersion.v1,
-        strict: true, 
+        strict: true,
         deprecationErrors: true
     }
 })
