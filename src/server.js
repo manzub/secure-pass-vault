@@ -47,11 +47,14 @@ async function start() {
 
         const db = mongodbClient.db();
         await db.command({ ping: 1 });
-        
+
         // build fastify app and get collections
         const collections = getCollections()
-        app = buildApp(collections)
-        
+        app = buildApp(collections, {
+            sessionSecret: confSettings.sessionSecret,
+            isDevelopment: confSettings.isDevelopment
+        })
+
         app.log.info({
             usersCollectionAvailable: Boolean(collections.usersCollection),
             vaultEntriesCollectionAvailable: Boolean(collections.vaultEntriesCollection)

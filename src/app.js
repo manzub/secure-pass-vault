@@ -2,7 +2,6 @@ const path = require('node:path');
 const Fastify = require('fastify');
 const view = require('@fastify/view');
 const nunjucks = require('nunjucks');
-const confSettings = require('./config/config');
 
 // routes
 const landingRoutes = require('./routes/landing-routes');
@@ -10,17 +9,17 @@ const vaultEntryRoutes = require('./routes/vault-entry-routes');
 const authRoutes = require('./routes/auth-routes');
 
 
-function buildApp(collections) {
+function buildApp(collections, settings) {
     const fastify = Fastify({ logger: true, bodyLimit: 100 * 1024 });
 
     fastify.register(require('@fastify/cookie'))
     fastify.register(require('@fastify/session'), {
-        secret: confSettings.sessionSecret,
+        secret: settings.sessionSecret,
         cookieName: 'vault.sid',
         cookie: {
             httpOnly: true,
             sameSite: 'lax',
-            secure: !confSettings.isDevelopment,
+            secure: !settings.isDevelopment,
             maxAge: 30 * 60 * 1000
         }
     })
