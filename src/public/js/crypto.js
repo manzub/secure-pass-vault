@@ -42,13 +42,47 @@ async function decryptPayload(ciphertext, key, iv, additionalData) {
 }
 
 function arrayBufferToBase64(buffer) {
-    let binary = '';
-    let bytes = new Uint8Array(buffer)
-    let len = bytes.byteLength
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i])
+    const bytes = new Uint8Array(buffer)
+    const len = bytes.byteLength
+
+    const CHUNK_SIZE = 30000
+    let binary = ''
+
+    for (let i = 0; i < len; i += CHUNK_SIZE) {
+        const chunk = bytes.subarray(i, i + CHUNK_SIZE)
+        binary += String.fromCharCode(...chunk);
     }
-    return window.btoa(binary)
+
+    return btoa(binary)
 }
 
-module.exports = { generateEncryptionKey, generateIV, encodePayload, decryptPayload, encryptPayload, arrayBufferToBase64 }
+function base64ToArrayBuffer(base64) {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+}
+
+const VaultCrypto = {
+    generateEncryptionKey,
+    generateIV,
+    encodePayload,
+    encryptPayload,
+    decryptPayload,
+    arrayBufferToBase64,
+    base64ToArrayBuffer
+};
+
+// Browser
+if (typeof window !== "undefined") {
+    window.VaultCrypto = VaultCrypto;
+}
+
+// Node.js testing
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = VaultCrypto;
+}
