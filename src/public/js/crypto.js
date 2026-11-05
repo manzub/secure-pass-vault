@@ -1,3 +1,16 @@
+function generateEntryId() {
+    const randomBytes = crypto.getRandomValues(new Uint8Array(12));
+
+    return Array.from(randomBytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+function generateAAD(entryId, cryptoVersion) {
+    const aadString = `${entryId}:${cryptoVersion}`
+    return new TextEncoder().encode(aadString)
+}
+
 async function generateEncryptionKey() {
     return crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
@@ -16,12 +29,13 @@ function encodePayload(payload) {
     return textEncoder.encode(JSON.stringify(payload))
 }
 
-async function encryptPayload(payload, key, additionalData) {
+async function encryptPayload(payload, key, entryId, cryptoVersion) {
     const iv = generateIV();
     const data = encodePayload(payload);
+    const aad = generateAAD(entryId, cryptoVersion)
 
     const ciphertext = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv, additionalData },
+        { name: "AES-GCM", iv, additionalData: aad },
         key,
         data
     );
@@ -29,9 +43,10 @@ async function encryptPayload(payload, key, additionalData) {
     return { iv, ciphertext };
 }
 
-async function decryptPayload(ciphertext, key, iv, additionalData) {
+async function decryptPayload(ciphertext, key, iv, entryId, cryptoVersion) {
+    const aad = generateAAD(entryId, cryptoVersion)
     const arrayBuffer = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv, additionalData },
+        { name: "AES-GCM", iv, additionalData: aad },
         key,
         ciphertext
     );
@@ -68,6 +83,8 @@ function base64ToArrayBuffer(base64) {
 }
 
 const VaultCrypto = {
+    generateAAD,
+    generateEntryId,
     generateEncryptionKey,
     generateIV,
     encodePayload,

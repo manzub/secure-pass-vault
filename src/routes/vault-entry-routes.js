@@ -1,12 +1,10 @@
 const { ObjectId, Binary } = require('bson');
 const requireAuth = require('../hooks/require-auth');
-const { vaultEntrySchema } = require('../schemas/vault-entry-schema');
+const { updateVaultEntrySchema, createVaultEntrySchema } = require('../schemas/vault-entry-schema');
 const { validateVaultEntryCrypto } = require('../utils/crypto-validation');
+const { serializeVaultEntry } = require('../utils/serialize-vault-entry');
 
 async function vaultEntryRoutes(fastify, options) {
-    const schema = {
-        body: vaultEntrySchema
-    }
 
     // GET ALL ENTRIES
     fastify.get('/api/vault-entries', { preHandler: requireAuth }, async function (request, reply) {
@@ -14,8 +12,12 @@ async function vaultEntryRoutes(fastify, options) {
 
         try {
             const userId = new ObjectId(request.session.userId)
+
             const entries = await options.vaultEntriesCollection.find({ userId }).toArray()
-            return reply.code(200).send(entries)
+
+            const serializedEntries = entries.map(serializeVaultEntry)
+
+            return reply.code(200).send(serializedEntries)
         } catch (error) {
             fastify.log.error(error)
             return reply.code(500).send({ message: "An error occurred" })
@@ -37,7 +39,7 @@ async function vaultEntryRoutes(fastify, options) {
                 });
             }
 
-            return reply.code(200).send(singleEntry)
+            return reply.code(200).send(serializeVaultEntry(singleEntry))
         } catch (error) {
             fastify.log.error(error)
             return reply.code(500).send({ message: "An error occurred" })
@@ -45,7 +47,7 @@ async function vaultEntryRoutes(fastify, options) {
     })
 
     // UPDATE RECORD
-    fastify.put('/api/vault-entries/:id', { schema, preHandler: requireAuth }, async function (request, reply) {
+    fastify.put('/api/vault-entries/:id', { schema: { body: updateVaultEntrySchema }, preHandler: requireAuth }, async function (request, reply) {
         if (!ObjectId.isValid(request.params.id)) return reply.code(400).send({ message: "Invalid entry ID" });
 
         if (!validateVaultEntryCrypto(request.body)) return reply.code(400).send({ message: "Invalid IV or ciphertext" })
@@ -69,7 +71,7 @@ async function vaultEntryRoutes(fastify, options) {
     })
 
     // CREATE NEW ENTRY
-    fastify.post('/api/vault-entries', { schema, preHandler: requireAuth }, async function (request, reply) {
+    fastify.post('/api/vault-entries', { schema: { body: createVaultEntrySchema }, preHandler: requireAuth }, async function (request, reply) {
         if (!validateVaultEntryCrypto(request.body)) return reply.code(400).send({ message: "Invalid IV or ciphertext" })
 
         try {
@@ -78,8 +80,12 @@ async function vaultEntryRoutes(fastify, options) {
 
             if (!ObjectId.isValid(request.session.userId)) return reply.code(401).send({ message: "Authentication required" });
 
+            if (!ObjectId.isValid(request.body.entryId)) return reply.code(400).send({ message: "Valid Entry Id required" });
+
             const now = new Date();
+            const entryId = new ObjectId(request.body.entryId);
             const newEntry = {
+                _id: entryId,
                 userId: new ObjectId(request.session.userId),
                 createdAt: now,
                 updatedAt: now,
@@ -87,10 +93,16 @@ async function vaultEntryRoutes(fastify, options) {
                 iv: new Binary(ivBuffer),
                 ciphertext: new Binary(ciphertextBuffer)
             }
-            const resp = await options.vaultEntriesCollection.insertOne(newEntry)
-            return reply.code(201).send({ message: "Vault Entry saved successful", entryId: resp.insertedId })
+            await options.vaultEntriesCollection.insertOne(newEntry);
+            return reply.code(201).send({ message: "Vault Entry saved successful", entryId: entryId.toString() })
         } catch (error) {
             fastify.log.error(error)
+
+            if (error.code === 11000) {
+                return reply.code(409).send({
+                    message: "Entry ID already exists"
+                });
+            }
             return reply.code(500).send({ message: "An error occurred" })
         }
     })
