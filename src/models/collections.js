@@ -6,10 +6,12 @@ function getCollections() {
 
     const usersCollection = database.collection("users");
     const vaultEntriesCollection = database.collection("vaultEntries");
+    const vaultSettingsCollection = database.collection("vaultSettings");
 
     return {
         usersCollection,
-        vaultEntriesCollection
+        vaultEntriesCollection,
+        vaultSettingsCollection
     };
 }
 

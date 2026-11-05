@@ -8,7 +8,7 @@ async function vaultEntryRoutes(fastify, options) {
 
     // GET ALL ENTRIES
     fastify.get('/api/vault-entries', { preHandler: requireAuth }, async function (request, reply) {
-        if (!ObjectId.isValid(request.session.userId)) return reply.code(401).send({ message: "Invalid authentication session" });
+        if (!ObjectId.isValid(request.session?.userId)) return reply.code(401).send({ message: "Invalid authentication session" });
 
         try {
             const userId = new ObjectId(request.session.userId)
@@ -78,7 +78,7 @@ async function vaultEntryRoutes(fastify, options) {
             const ivBuffer = Buffer.from(request.body.iv, 'base64');
             const ciphertextBuffer = Buffer.from(request.body.ciphertext, 'base64');
 
-            if (!ObjectId.isValid(request.session.userId)) return reply.code(401).send({ message: "Authentication required" });
+            if (!ObjectId.isValid(request.session?.userId)) return reply.code(401).send({ message: "Authentication required" });
 
             if (!ObjectId.isValid(request.body.entryId)) return reply.code(400).send({ message: "Valid Entry Id required" });
 

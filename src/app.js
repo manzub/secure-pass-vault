@@ -7,6 +7,7 @@ const nunjucks = require('nunjucks');
 const landingRoutes = require('./routes/landing-routes');
 const vaultEntryRoutes = require('./routes/vault-entry-routes');
 const authRoutes = require('./routes/auth-routes');
+const vaultSettingsRoutes = require('./routes/vault-settings-routes');
 
 
 function buildApp(collections, settings) {
@@ -28,6 +29,7 @@ function buildApp(collections, settings) {
     fastify.register(landingRoutes)
     fastify.register(authRoutes, { usersCollection: collections.usersCollection })
     fastify.register(vaultEntryRoutes, { vaultEntriesCollection: collections.vaultEntriesCollection })
+    fastify.register(vaultSettingsRoutes, { vaultSettingsCollection: collections.vaultSettingsCollection })
 
     return fastify;
 }

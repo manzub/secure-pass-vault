@@ -6,7 +6,7 @@ const confSettings = require('./config/config');
 const buildApp = require('./app');
 const mongodbClient = require('./config/database');
 const getCollections = require('./models/collections');
-const { createVaultEntriesIndex, createUsersEmailIndex } = require('./config/indexes');
+const { createVaultEntriesIndex, createUsersEmailIndex, createVaultSettingsIndex } = require('./config/indexes');
 
 async function start() {
     let app;
@@ -61,8 +61,9 @@ async function start() {
         });
         await createVaultEntriesIndex(collections.vaultEntriesCollection)
         await createUsersEmailIndex(collections.usersCollection)
+        await createVaultSettingsIndex(collections.vaultSettingsCollection)
         app.log.info('MongoDB connection verified');
-        app.log.info('verified vaultEntries index && usersEmail index');
+        app.log.info('verified vaultEntries index && usersEmail && vaultSettings index');
 
         const address = await app.listen({
             port: confSettings.port,

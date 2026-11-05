@@ -14,7 +14,7 @@ function generateAAD(entryId, cryptoVersion) {
 async function generateEncryptionKey() {
     return crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
-        false,
+        true,
         ['encrypt', 'decrypt']
     );
 }
