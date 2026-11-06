@@ -1,0 +1,22 @@
+{% extends "layouts/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<h1>{{ title }}</h1>
+<p>Unlock your vault</p>
+<p>PS: losing your vault unlock secret could mean permanently losing access to your vault.</p>
+<form id="vaultUnlockForm">
+    <label for="unlockSecret">Vault Unlock Secret</label>
+    <input type="password" name="unlockSecret" minlength="12" required id="unlockSecret" autocomplete="current-password">
+
+    <button type="submit" id="unlockButton">Unlock Vault</button>
+
+    <p id="unlockMessage" role="status" aria-live="polite"></p>
+</form>
+
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="/public/js/vault-unlock.js"></script>
+{% endblock %}

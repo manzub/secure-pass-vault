@@ -1,0 +1,24 @@
+{% extends "layouts/base.html" %}
+
+{% block page_title %}Set Up your vault{% endblock %}
+
+{% block page_content %}
+<h1>Set Up Your Vault</h1>
+<p>Enter a vault unlock secret. Your vault unlock secret is different from your account password</p>
+<p>PS: losing your vault unlock secret could mean permanently losing access to your vault.</p>
+<form id="vaultSetupForm">
+    <label for="unlockSecret">Vault Unlock Secret</label>
+    <input type="password" name="unlockSecret" minlength="12" required id="unlockSecret" autocomplete="new-password">
+
+    <label for="confirmUnlockSecret">Confirm Vault Unlock Secret</label>
+    <input type="password" name="confirmUnlockSecret" minlength="12" required id="confirmUnlockSecret">
+
+    <button type="submit" id="setupButton">Create Vault</button>
+
+    <p id="setupMessage" role="status" aria-live="polite"></p>
+</form>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="/public/js/vault-setup.js"></script>
+{% endblock %}
