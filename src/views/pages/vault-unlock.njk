@@ -8,7 +8,8 @@
 <p>PS: losing your vault unlock secret could mean permanently losing access to your vault.</p>
 <form id="vaultUnlockForm">
     <label for="unlockSecret">Vault Unlock Secret</label>
-    <input type="password" name="unlockSecret" minlength="12" required id="unlockSecret" autocomplete="current-password">
+    <input type="password" name="unlockSecret" minlength="12" required id="unlockSecret"
+        autocomplete="current-password">
 
     <button type="submit" id="unlockButton">Unlock Vault</button>
 
@@ -18,5 +19,6 @@
 {% endblock %}
 
 {% block additional_scripts %}
-    <script src="/public/js/vault-unlock.js"></script>
+<script src="/public/js/vault-worker-client.js"></script>
+<script src="/public/js/vault-unlock.js"></script>
 {% endblock %}

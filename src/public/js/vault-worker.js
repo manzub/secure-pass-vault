@@ -9,37 +9,129 @@ importScripts(
 
 let vaultKey = null;
 let operationGeneration = 0;
+let vaultOwnerId = null;
+
+function clearVault() {
+    operationGeneration++;
+    vaultKey = null;
+    vaultOwnerId = null;
+}
+
+async function getAuthenticatedUserId() {
+    const response = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store"
+    });
+
+    if (!response.ok) {
+        throw new Error("Authentication required");
+    }
+
+    const data = await response.json();
+
+    if (typeof data.userId !== "string" || !data.userId) {
+        throw new Error("Invalid session identity");
+    }
+
+    return data.userId;
+}
+
+async function requireUnlockedVault() {
+    const generation = operationGeneration;
+
+    if (!vaultKey || !vaultOwnerId) {
+        throw new Error("Vault is locked");
+    }
+
+    const currentUserId = await getAuthenticatedUserId();
+
+    if (generation !== operationGeneration) {
+        throw new Error("Vault state changed");
+    }
+
+    if (currentUserId !== vaultOwnerId) {
+        clearVault();
+        throw new Error("Vault session mismatch");
+    }
+
+    return vaultKey;
+}
 
 self.onconnect = function (event) {
     const port = event.ports[0];
 
     port.onmessage = async function (event) {
-        const { type } = event.data ?? {};
+        const { type, requestId } = event.data ?? {};
 
         switch (type) {
-            case "STATUS":
-                port.postMessage({
-                    type: "STATUS_RESULT",
-                    unlocked: vaultKey !== null
-                });
+            case "STATUS": {
+                const generation = operationGeneration;
+
+                try {
+                    const currentUserId = await getAuthenticatedUserId();
+
+                    if (generation !== operationGeneration) {
+                        port.postMessage({
+                            type: "STATUS_RESULT",
+                            requestId,
+                            unlocked: false,
+                            stale: true
+                        });
+                        break;
+                    }
+
+                    if (vaultOwnerId !== currentUserId) {
+                        clearVault();
+                    }
+
+                    port.postMessage({
+                        type: "STATUS_RESULT",
+                        requestId,
+                        unlocked: vaultKey !== null
+                    });
+
+                } catch (error) {
+                    if (generation !== operationGeneration) {
+                        port.postMessage({
+                            type: "STATUS_RESULT",
+                            requestId,
+                            unlocked: false,
+                            stale: true
+                        });
+                        break;
+                    }
+
+                    clearVault();
+
+                    port.postMessage({
+                        type: "STATUS_RESULT",
+                        requestId,
+                        unlocked: false
+                    });
+                }
+
                 break;
+            }
 
             case "LOCK":
-                operationGeneration++;
-                vaultKey = null;
+                clearVault();
 
                 port.postMessage({
                     type: "LOCK_RESULT",
+                    requestId,
                     unlocked: false
                 });
                 break;
 
             case "UNLOCK": {
-                const generation = ++operationGeneration;
-                vaultKey = null
+                clearVault();
+                const generation = operationGeneration;
 
                 try {
                     const { unlockSecret, settings } = event.data;
+
+                    const userId = await getAuthenticatedUserId();
 
                     if (typeof unlockSecret !== "string" || !settings) {
                         throw new Error("Invalid unlock request");
@@ -68,36 +160,170 @@ self.onconnect = function (event) {
                     );
 
                     if (generation !== operationGeneration) {
+                        port.postMessage({
+                            type: "UNLOCK_RESULT",
+                            requestId,
+                            success: false,
+                            message: "Unlock operation cancelled"
+                        });
                         break;
                     }
 
+                    const currentUserId = await getAuthenticatedUserId();
+
+                    if (generation !== operationGeneration || currentUserId !== userId) {
+                        clearVault();
+
+                        port.postMessage({
+                            type: "UNLOCK_RESULT",
+                            requestId,
+                            success: false,
+                            message: "Session changed during unlock"
+                        });
+                        break;
+                    }
+
+
                     vaultKey = key;
+                    vaultOwnerId = userId
 
                     port.postMessage({
                         type: "UNLOCK_RESULT",
+                        requestId,
                         success: true
                     });
 
                 } catch (error) {
-                    if (generation === operationGeneration) {
-                        port.postMessage({
-                            type: "UNLOCK_RESULT",
-                            success: false,
-                            message: "Unable to unlock vault"
-                        });
-                    }
+                    port.postMessage({
+                        type: "UNLOCK_RESULT",
+                        requestId,
+                        success: false,
+                        message: generation === operationGeneration
+                            ? "Unable to unlock vault"
+                            : "Unlock operation cancelled"
+                    });
                 }
 
                 break;
-        }
+            }
+
+            case "ENCRYPT_ENTRY": {
+                try {
+                    const { entryId, payload, cryptoVersion = 1 } = event.data;
+
+                    if (
+                        typeof entryId !== "string" ||
+                        !/^[a-fA-F0-9]{24}$/.test(entryId) ||
+                        !payload ||
+                        typeof payload !== "object" ||
+                        Array.isArray(payload) ||
+                        cryptoVersion !== 1
+                    ) {
+                        throw new Error("Invalid entry data");
+                    }
+
+                    const key = await requireUnlockedVault();
+                    const generation = operationGeneration;
+
+                    const { iv, ciphertext } = await VaultCrypto.encryptPayload(
+                        payload,
+                        key,
+                        entryId,
+                        cryptoVersion
+                    );
+
+                    if (generation !== operationGeneration) {
+                        throw new Error("Vault state changed during encryption");
+                    }
+
+                    port.postMessage({
+                        type: "ENCRYPT_ENTRY_RESULT",
+                        requestId,
+                        success: true,
+                        entry: {
+                            entryId,
+                            cryptoVersion,
+                            iv: VaultCrypto.arrayBufferToBase64(iv),
+                            ciphertext: VaultCrypto.arrayBufferToBase64(ciphertext)
+                        }
+                    });
+
+                } catch (error) {
+                    port.postMessage({
+                        type: "ENCRYPT_ENTRY_RESULT",
+                        requestId,
+                        success: false,
+                        message: "Unable to encrypt entry"
+                    });
+                }
+
+                break;
+            }
+
+            case "DECRYPT_ENTRY": {
+                try {
+                    const { entry } = event.data ?? {};
+
+                    if (
+                        !entry ||
+                        typeof entry.entryId !== "string" ||
+                        !/^[a-fA-F0-9]{24}$/.test(entry.entryId) ||
+                        entry.cryptoVersion !== 1 ||
+                        typeof entry.iv !== "string" ||
+                        typeof entry.ciphertext !== "string"
+                    ) {
+                        throw new Error("Invalid encrypted entry");
+                    }
+
+                    const key = await requireUnlockedVault();
+                    const generation = operationGeneration;
+
+                    const iv = VaultCrypto.base64ToArrayBuffer(entry.iv);
+                    const ciphertext = VaultCrypto.base64ToArrayBuffer(entry.ciphertext);
+
+                    if (iv.byteLength !== 12 || ciphertext.byteLength < 16) {
+                        throw new Error("Invalid encryption data");
+                    }
+
+                    const payload = await VaultCrypto.decryptPayload(
+                        ciphertext,
+                        key,
+                        iv,
+                        entry.entryId,
+                        entry.cryptoVersion
+                    );
+
+                    if (generation !== operationGeneration) {
+                        throw new Error("Vault state changed during decryption");
+                    }
+
+                    port.postMessage({
+                        type: "DECRYPT_ENTRY_RESULT",
+                        requestId,
+                        success: true,
+                        payload
+                    });
+
+                } catch (error) {
+                    port.postMessage({
+                        type: "DECRYPT_ENTRY_RESULT",
+                        requestId,
+                        success: false,
+                        message: "Unable to decrypt entry"
+                    });
+                }
+
+                break;
+            }
 
             default:
-        port.postMessage({
-            type: "ERROR",
-            message: "Unknown worker command"
-        });
-    }
-};
+                port.postMessage({
+                    type: "ERROR",
+                    requestId,
+                    message: "Unknown worker command"
+                });
+        }
+    };
 
-port.start();
+    port.start();
 };

@@ -30,33 +30,24 @@
         return response.json();
     }
 
-    async function unlockVault(unlockSecret) {
+    async function unlockVaultWithWorker(unlockSecret) {
         const settings = await fetchVaultSettings();
 
-        // Validate the supported cryptographic configuration
-        if (
-            settings.cryptoVersion !== 1 ||
-            settings.kdf?.algorithm !== "argon2id" ||
-            settings.kdf.iterations !== 3 ||
-            settings.kdf.parallelism !== 1 ||
-            settings.kdf.memorySize !== 65536 ||
-            settings.kdf.hashLength !== 32
-        ) {
-            throw new Error("Unsupported vault encryption configuration");
+        const result = await window.VaultWorkerClient.send("UNLOCK", {
+            unlockSecret,
+            settings
+        });
+
+        if (!result.success) {
+            throw new Error(result.message || "Unable to unlock vault");
         }
 
-        const vaultMetadata = {
-            salt: VaultCrypto.base64ToArrayBuffer(settings.salt),
-            iv: VaultCrypto.base64ToArrayBuffer(settings.wrapIv),
-            wrappedKey: VaultCrypto.base64ToArrayBuffer(settings.wrappedVaultKey)
-        };
-
-        return VaultKeyDerivation.unlockVault(unlockSecret, vaultMetadata);
+        return result;
     }
 
     const VaultUnlock = {
         fetchVaultSettings,
-        unlockVault
+        unlockVaultWithWorker
     };
 
     if (typeof window !== "undefined") {
@@ -77,7 +68,7 @@
                 unlockMessage.textContent = "Unlocking your vault...";
 
                 try {
-                    const vaultKey = await unlockVault(unlockSecret);
+                    await unlockVaultWithWorker(unlockSecret);
 
                     secretInput.value = "";
 

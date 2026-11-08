@@ -1,3 +1,4 @@
+const requireAuth = require("../hooks/require-auth");
 const { loginSchema } = require("../schemas/login-schema");
 const { userSchema } = require("../schemas/user-schema");
 const normalizeEmail = require("../utils/normalize-email");
@@ -58,6 +59,28 @@ async function authRoutes(fastify, options) {
             return reply.code(500).send({ message: "An unexpected error occurred" })
         }
     })
+
+    fastify.get("/api/auth/session", { preHandler: requireAuth }, async function (request, reply) {
+        return reply.code(200).send({
+            userId: request.session.userId
+        });
+    });
+
+    fastify.post("/api/logout", { preHandler: requireAuth }, async function (request, reply) {
+        try {
+            await request.session.destroy();
+
+            return reply.code(200).send({
+                message: "Logged out successfully"
+            });
+        } catch (error) {
+            fastify.log.error(error);
+
+            return reply.code(500).send({
+                message: "Unable to log out"
+            });
+        }
+    });
 }
 
 module.exports = authRoutes
