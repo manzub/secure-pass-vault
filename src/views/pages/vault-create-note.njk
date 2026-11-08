@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<h1>{{ title }}</h1>
+<p>Create New Entry</p>
+<form id="createNoteForm">
+    <label for="noteTitle">Title</label>
+    <input type="text" name="noteTitle" required id="noteTitle">
+    <br>
+
+    <label for="noteContent">Note</label>
+    <textarea name="noteContent" id="noteContent"></textarea>
+    <br>
+
+    <button type="submit" id="saveNoteButton">Save Note</button>
+    <br>
+    <a href="/vault">Go back to Vault</a>
+
+    <p id="noteMessage" role="status" aria-live="polite"></p>
+</form>
+
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="/public/js/vault-worker-client.js"></script>
+<script src="/public/js/vault-entry-client.js"></script>
+<script src="/public/js/vault-create-note.js"></script>
+{% endblock %}

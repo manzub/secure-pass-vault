@@ -1,0 +1,24 @@
+{% extends "layouts/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<main id="vaultDashboard">
+    <h1>{{ title }}</h1>
+    <p id="vaultStatus" role="status" aria-live="polite"></p>
+    <div id="actionButtons">
+        <button id="addEntryButton">Add Entry</button>
+        <button id="lockVaultButton">Lock Vault</button>
+    </div>
+    <div id="vaultEntries">
+        <p>Your vault entries will appear here.</p>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="/public/js/vault-worker-client.js"></script>
+<script src="/public/js/vault-entry-client.js"></script>
+<script src="/public/js/vault-dashboard.js"></script>
+{% endblock %}
