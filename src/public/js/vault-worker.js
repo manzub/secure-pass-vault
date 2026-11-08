@@ -39,23 +39,34 @@ async function getAuthenticatedUserId() {
 
 async function requireUnlockedVault() {
     const generation = operationGeneration;
+    const ownerId = vaultOwnerId;
+    const key = vaultKey;
 
-    if (!vaultKey || !vaultOwnerId) {
+    if (!key || !ownerId) {
         throw new Error("Vault is locked");
     }
 
-    const currentUserId = await getAuthenticatedUserId();
+    let currentUserId;
+
+    try {
+        currentUserId = await getAuthenticatedUserId();
+    } catch (error) {
+        if (generation === operationGeneration) {
+            clearVault();
+        }
+        throw new Error("Authentication required");
+    }
 
     if (generation !== operationGeneration) {
         throw new Error("Vault state changed");
     }
 
-    if (currentUserId !== vaultOwnerId) {
+    if (currentUserId !== ownerId) {
         clearVault();
         throw new Error("Vault session mismatch");
     }
 
-    return vaultKey;
+    return key;
 }
 
 self.onconnect = function (event) {
