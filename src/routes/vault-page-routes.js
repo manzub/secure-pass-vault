@@ -1,7 +1,19 @@
 const requireAuth = require("../hooks/require-auth");
 
 async function vaultPageRoutes(fastify, options) {
-    fastify.get("/vault/setup",{ preHandler: requireAuth }, async function (request, reply) {
+    fastify.get("/vault", { preHandler: requireAuth }, async function (request, reply) {
+        return reply.view("pages/vault-dashboard.njk", {
+            title: "My Vault"
+        });
+    });
+
+    fastify.get("/vault/notes/new", { preHandler: requireAuth }, async function (request, reply) {
+        return reply.view("pages/vault-create-note.njk", {
+            title: "Create Note"
+        });
+    });
+
+    fastify.get("/vault/setup", { preHandler: requireAuth }, async function (request, reply) {
         return reply.view("pages/vault-setup.njk", {
             title: "Set Up Your Vault"
         });
