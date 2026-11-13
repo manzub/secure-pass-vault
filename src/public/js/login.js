@@ -39,7 +39,19 @@
 
                 passwordInput.value = "";
 
-                window.location.assign("/vault/setup");
+                const vaultResponse = await fetch("/api/vault/settings", {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store"
+                });
+
+                if (vaultResponse.status === 404) {
+                    window.location.replace("/vault/setup");
+                } else if (vaultResponse.ok) {
+                    window.location.replace("/vault/unlock");
+                } else {
+                    throw new Error("Unable to determine vault setup status");
+                }
 
             } catch (error) {
                 loginMessage.textContent =

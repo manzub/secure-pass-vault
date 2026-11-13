@@ -48,6 +48,97 @@
         return response.json();
     }
 
+    async function getEntry(entryId) {
+        if (!/^[a-fA-F0-9]{24}$/.test(entryId)) {
+            throw new Error("Invalid entry ID");
+        }
+
+        const response = await fetch(
+            `/api/vault-entries/${encodeURIComponent(entryId)}`,
+            {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store"
+            }
+        );
+
+        if (response.status === 404) {
+            throw new Error("Entry not found");
+        }
+
+        if (!response.ok) {
+            throw new Error("Unable to retrieve entry");
+        }
+
+        return response.json();
+    }
+
+    async function updateEntry(entryId, payload) {
+        if (!/^[a-fA-F0-9]{24}$/.test(entryId)) {
+            throw new Error("Invalid entry ID");
+        }
+
+        const encrypted = await window.VaultWorkerClient.send("ENCRYPT_ENTRY", {
+            entryId,
+            cryptoVersion: 1,
+            payload
+        });
+
+        if (!encrypted.success || !encrypted.entry) {
+            throw new Error(encrypted.message || "Unable to encrypt entry");
+        }
+
+        const { cryptoVersion, iv, ciphertext } = encrypted.entry;
+
+        const response = await fetch(
+            `/api/vault-entries/${encodeURIComponent(entryId)}`,
+            {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    cryptoVersion,
+                    iv,
+                    ciphertext
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Unable to update entry");
+        }
+
+        return result;
+    }
+
+    async function deleteEntry(entryId) {
+        if (!/^[a-fA-F0-9]{24}$/.test(entryId)) {
+            throw new Error("Invalid entry ID");
+        }
+
+        const response = await fetch(
+            `/api/vault-entries/${encodeURIComponent(entryId)}`,
+            {
+                method: "DELETE",
+                credentials: "same-origin"
+            }
+        );
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error("Entry not found");
+            }
+
+            throw new Error("Unable to delete entry");
+        }
+
+        return true;
+    }
+
     async function decryptEntry(entry) {
         const result = await window.VaultWorkerClient.send("DECRYPT_ENTRY", {
             entry
@@ -66,6 +157,9 @@
     window.VaultEntryClient = {
         createEntry,
         getEntries,
+        getEntry,
+        updateEntry,
+        deleteEntry,
         decryptEntry
     };
 })();

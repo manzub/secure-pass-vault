@@ -74,8 +74,7 @@
 
                     unlockMessage.textContent = "Vault unlocked successfully";
 
-                    // Next step: retain vaultKey in an in-memory vault session.
-
+                    window.location.replace("/vault");
                 } catch (error) {
                     unlockMessage.textContent =
                         error.message === "Vault has not been initialised"

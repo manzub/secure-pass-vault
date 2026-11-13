@@ -31,7 +31,7 @@ function buildApp(collections, settings) {
     fastify.register(authRoutes, { usersCollection: collections.usersCollection })
     fastify.register(vaultEntryRoutes, { vaultEntriesCollection: collections.vaultEntriesCollection })
     fastify.register(vaultSettingsRoutes, { vaultSettingsCollection: collections.vaultSettingsCollection })
-    fastify.register(vaultPageRoutes)
+    fastify.register(vaultPageRoutes, { vaultSettingsCollection: collections.vaultSettingsCollection })
 
     return fastify;
 }

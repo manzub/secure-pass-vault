@@ -24,11 +24,19 @@
                 const entryElement = document.createElement("div");
                 const titleElement = document.createElement("h3");
                 const typeElement = document.createElement("p");
+                const linkElement = document.createElement("a");
+
+                linkElement.href = `/vault/notes/${encodeURIComponent(entry.entryId)}`;
+                linkElement.textContent = entry.title || "Untitled";
 
                 titleElement.textContent = entry.title || "Untitled";
                 typeElement.textContent = entry.type || "Unknown";
 
-                entryElement.append(titleElement, typeElement);
+                if (entry.type === "note") {
+                    entryElement.append(linkElement, typeElement);
+                } else {
+                    entryElement.append(titleElement, typeElement);
+                }
                 entriesContainer.appendChild(entryElement);
             }
 

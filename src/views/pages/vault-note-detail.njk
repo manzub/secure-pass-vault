@@ -1,0 +1,24 @@
+{% extends "layouts/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<h1>{{ title }}</h1>
+<div id="noteDetail">
+    <h3 id="noteTitle"></h3>
+    <div id="content">
+        <pre style="white-space: pre-wrap;overflow-wrap: anywhere" id="noteContent"></pre>
+    </div>
+    <p id="noteMessage" role="status" aria-live="polite"></p>
+    <br>
+    <a href="#" id="editNoteLink">Edit Note</a>
+    <button type="button" id="deleteNoteButton" disabled>Delete Note</button>
+    <a href="/vault">Go Back</a>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="/public/js/vault-worker-client.js"></script>
+<script src="/public/js/vault-entry-client.js"></script>
+<script src="/public/js/vault-note-detail.js"></script>
+{% endblock %}

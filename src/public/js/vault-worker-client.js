@@ -16,13 +16,13 @@
         );
 
         worker.port.onmessage = function (event) {
-            const { requestId, ...response } = event.data ?? {};
+            const response = event.data ?? {};
 
-            const pending = pendingRequests.get(requestId);
+            const pending = pendingRequests.get(response.requestId);
             if (!pending) return;
 
             clearTimeout(pending.timeout);
-            pendingRequests.delete(requestId);
+            pendingRequests.delete(response.requestId);
 
             pending.resolve(response);
         };

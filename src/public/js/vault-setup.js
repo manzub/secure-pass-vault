@@ -79,11 +79,11 @@
 
                     await VaultSetup.saveVaultSettings(payload);
 
-                    // We will handle the unlocked vault key in the next step.
                     setupMessage.textContent = "Vault created successfully";
 
                     unlockSecretInput.value = "";
                     confirmInput.value = "";
+                    window.location.replace("/vault/unlock");
 
                 } catch (error) {
                     setupMessage.textContent = error.message || "Failed to create vault";

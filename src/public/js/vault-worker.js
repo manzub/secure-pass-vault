@@ -11,6 +11,9 @@ let vaultKey = null;
 let operationGeneration = 0;
 let vaultOwnerId = null;
 
+const workerInstanceId = crypto.randomUUID();
+console.log("Vault worker started:", workerInstanceId);
+
 function clearVault() {
     operationGeneration++;
     vaultKey = null;
@@ -99,6 +102,7 @@ self.onconnect = function (event) {
                     port.postMessage({
                         type: "STATUS_RESULT",
                         requestId,
+                        workerInstanceId,
                         unlocked: vaultKey !== null
                     });
 
@@ -131,6 +135,7 @@ self.onconnect = function (event) {
                 port.postMessage({
                     type: "LOCK_RESULT",
                     requestId,
+                    workerInstanceId,
                     unlocked: false
                 });
                 break;
@@ -201,6 +206,7 @@ self.onconnect = function (event) {
                     port.postMessage({
                         type: "UNLOCK_RESULT",
                         requestId,
+                        workerInstanceId,
                         success: true
                     });
 
@@ -250,6 +256,7 @@ self.onconnect = function (event) {
                     port.postMessage({
                         type: "ENCRYPT_ENTRY_RESULT",
                         requestId,
+                        workerInstanceId,
                         success: true,
                         entry: {
                             entryId,
@@ -311,6 +318,7 @@ self.onconnect = function (event) {
                     port.postMessage({
                         type: "DECRYPT_ENTRY_RESULT",
                         requestId,
+                        workerInstanceId,
                         success: true,
                         payload
                     });
