@@ -16,7 +16,7 @@
             }
 
             if (!result.unlocked) {
-                window.location.replace("/vault/unlock");
+                window.VaultShell.showView("unlock")
                 return;
             }
 
@@ -52,11 +52,10 @@
                     content
                 });
 
-                // Clear sensitive form data after successful storage.
                 form.reset();
 
-                window.location.assign("/vault");
-
+                window.dispatchEvent(new CustomEvent("vault:entries-changed"));
+                window.VaultShell.showView("dashboard");
             } catch (error) {
                 messageElement.textContent =
                     error.message || "Unable to save note.";

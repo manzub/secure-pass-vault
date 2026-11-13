@@ -12,7 +12,6 @@ let operationGeneration = 0;
 let vaultOwnerId = null;
 
 const workerInstanceId = crypto.randomUUID();
-console.log("Vault worker started:", workerInstanceId);
 
 function clearVault() {
     operationGeneration++;

@@ -83,7 +83,7 @@
 
                     unlockSecretInput.value = "";
                     confirmInput.value = "";
-                    window.location.replace("/vault/unlock");
+                    window.location.replace("/vault");
 
                 } catch (error) {
                     setupMessage.textContent = error.message || "Failed to create vault";

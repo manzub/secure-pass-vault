@@ -25,6 +25,8 @@
             body: JSON.stringify(encrypted.entry)
         });
 
+        handleUnauthorized(response)
+
         const result = await response.json();
 
         if (!response.ok) {
@@ -40,6 +42,8 @@
             credentials: "same-origin",
             cache: "no-store"
         });
+
+        handleUnauthorized(response)
 
         if (!response.ok) {
             throw new Error("Unable to retrieve vault entries");
@@ -61,6 +65,8 @@
                 cache: "no-store"
             }
         );
+
+        handleUnauthorized(response)
 
         if (response.status === 404) {
             throw new Error("Entry not found");
@@ -106,6 +112,8 @@
             }
         );
 
+        handleUnauthorized(response)
+
         const result = await response.json();
 
         if (!response.ok) {
@@ -127,6 +135,8 @@
                 credentials: "same-origin"
             }
         );
+
+        handleUnauthorized(response)
 
         if (!response.ok) {
             if (response.status === 404) {
@@ -152,6 +162,13 @@
             entryId: entry.entryId,
             ...result.payload
         };
+    }
+
+    function handleUnauthorized(response) {
+        if (response.status === 401) {
+            window.location.replace("/login");
+            throw new Error("Session expired");
+        }
     }
 
     window.VaultEntryClient = {

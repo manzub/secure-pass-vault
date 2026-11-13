@@ -74,7 +74,10 @@
 
                     unlockMessage.textContent = "Vault unlocked successfully";
 
-                    window.location.replace("/vault");
+                    if (window.VaultShell) {
+                        window.VaultShell.showView("dashboard");
+                        window.dispatchEvent(new CustomEvent("vault:unlocked"));
+                    }
                 } catch (error) {
                     unlockMessage.textContent =
                         error.message === "Vault has not been initialised"

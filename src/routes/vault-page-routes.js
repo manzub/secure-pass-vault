@@ -31,9 +31,7 @@ async function vaultPageRoutes(fastify, options) {
     });
 
     fastify.get("/vault/unlock", { preHandler: requireAuth }, async function (request, reply) {
-        return reply.view("pages/vault-unlock.njk", {
-            title: "Unlock Your Vault"
-        });
+        return reply.redirect("/vault");
     });
 
     fastify.get("/vault/notes/:entryId", { preHandler: requireAuth }, async function (request, reply) {
