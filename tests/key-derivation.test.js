@@ -2,8 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 
-const VaultKeyDerivation = require("../src/public/js/key-derivation");
-const VaultCrypto = require("../src/public/js/crypto");
+const VaultKeyDerivation = require("../src/public/js/crypto/key-derivation");
+const VaultCrypto = require("../src/public/js/crypto/crypto");
 
 test("derive a 256-bit vault key encryption key", async () => {
     const unlockSecret = "my-test-vault-secret";

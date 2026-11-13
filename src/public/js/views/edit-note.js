@@ -2,10 +2,10 @@
     "use strict";
 
     document.addEventListener("DOMContentLoaded", async () => {
-        const titleInput = document.getElementById("noteTitle");
-        const contentInput = document.getElementById("noteContent");
-        const saveButton = document.getElementById("saveNoteButton");
-        const messageElement = document.getElementById("noteMessage");
+        const titleInput = document.getElementById("editNoteTitle");
+        const contentInput = document.getElementById("editNoteContent");
+        const saveButton = document.getElementById("editNoteSaveButton");
+        const messageElement = document.getElementById("editNoteMessage");
         const cancelLink = document.getElementById("cancelEditLink");
 
         saveButton.disabled = true;
@@ -24,7 +24,7 @@
             }
 
             if (!status.unlocked) {
-                window.location.replace("/vault/unlock");
+                window.VaultShell.showView("unlock");
                 return;
             }
 

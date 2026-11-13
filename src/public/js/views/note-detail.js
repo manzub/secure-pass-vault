@@ -2,8 +2,8 @@
     "use strict";
 
     document.addEventListener("DOMContentLoaded", async () => {
-        const messageElement = document.getElementById("noteMessage");
-        const deleteButton = document.getElementById("deleteNoteButton");
+        const messageElement = document.getElementById("detailNoteMessage");
+        const deleteButton = document.getElementById("detailDeleteButton");
 
         try {
             const status = await window.VaultWorkerClient.send("STATUS");
@@ -14,7 +14,7 @@
             }
 
             if (!status.unlocked) {
-                window.location.replace("/vault/unlock");
+                window.VaultShell.showView("unlock")
                 return;
             }
 
@@ -24,7 +24,7 @@
             const entryId = window.location.pathname.split("/").pop();
 
             // create edit button
-            document.getElementById("editNoteLink").href =
+            document.getElementById("detailEditButton").href =
                 `/vault/notes/${encodeURIComponent(entryId)}/edit`;
 
             const encryptedEntry = await window.VaultEntryClient.getEntry(entryId);
@@ -35,16 +35,15 @@
                 throw new Error("Requested entry is not a note");
             }
 
-            document.getElementById("noteTitle").textContent =
+            document.getElementById("detailNoteTitle").textContent =
                 note.title || "Untitled";
 
-            document.getElementById("noteContent").textContent =
+            document.getElementById("detailNoteContent").textContent =
                 note.content || "";
 
             messageElement.textContent = "";
 
-            // delete button 
-            const deleteButton = document.getElementById("deleteNoteButton");
+            // delete button
             deleteButton.disabled = false;
             
             deleteButton.addEventListener("click", async () => {
@@ -60,7 +59,7 @@
                 try {
                     await window.VaultEntryClient.deleteEntry(entryId);
 
-                    window.location.replace("/vault");
+                    window.VaultShell.showView("unlock");
                 } catch (error) {
                     messageElement.textContent =
                         error.message || "Unable to delete note.";

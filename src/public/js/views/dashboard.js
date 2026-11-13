@@ -51,47 +51,17 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
         const statusElement = document.getElementById("vaultStatus");
+        const lockButton = document.getElementById("lockVaultButton");
 
+        // Register event listeners first
         window.addEventListener("vault:unlocked", async () => {
-            try {
-                await loadVaultEntries();
-            } catch (error) {
-                console.error("Unable to load vault entries:", error);
-            }
+            statusElement.textContent = "Vault unlocked";
+            await loadVaultEntries();
         });
 
         window.addEventListener("vault:entries-changed", async () => {
-            try {
-                await loadVaultEntries();
-            } catch (error) {
-                console.error("Unable to refresh vault entries:", error);
-            }
+            await loadVaultEntries();
         });
-
-        try {
-            const result = await window.VaultWorkerClient.send("STATUS");
-
-            if (result.stale) {
-                statusElement.textContent = "Vault status changed. Please refresh.";
-                return;
-            }
-
-            if (!result.unlocked) {
-                window.VaultShell.showView("unlock");
-                return;
-            }
-
-            window.VaultShell.showView("dashboard");
-
-            statusElement.textContent = "Vault unlocked";
-            await loadVaultEntries()
-
-        } catch (error) {
-            statusElement.textContent = "Unable to check vault status";
-        }
-
-        // USERS LOCK VAULT
-        const lockButton = document.getElementById("lockVaultButton");
 
         lockButton.addEventListener("click", async () => {
             lockButton.disabled = true;
@@ -103,18 +73,37 @@
                     throw new Error("Unable to confirm vault lock");
                 }
 
-                const entriesContainer = document.getElementById("vaultEntries");
+                document.getElementById("vaultEntries").replaceChildren();
 
-                entriesContainer.replaceChildren();
                 statusElement.textContent = "Vault locked";
-
                 window.VaultShell.showView("unlock");
 
             } catch (error) {
                 console.error("Vault lock failed:", error);
                 statusElement.textContent = "Unable to confirm vault lock";
+            } finally {
                 lockButton.disabled = false;
             }
         });
+
+        // Check initial vault status LAST
+        try {
+            const result = await window.VaultWorkerClient.send("STATUS");
+
+            if (result.stale) return;
+
+            if (!result.unlocked) {
+                window.VaultShell.showView("unlock");
+                return;
+            }
+
+            window.VaultShell.showView("dashboard");
+            statusElement.textContent = "Vault unlocked";
+
+            await loadVaultEntries();
+
+        } catch (error) {
+            statusElement.textContent = "Unable to check vault status";
+        }
     });
 })();

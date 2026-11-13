@@ -3,8 +3,7 @@ const assert = require('node:assert/strict');
 const buildApp = require('../src/app');
 const { ObjectId, Binary } = require('mongodb');
 const { hashPassword } = require('../src/utils/password');
-const { generateEntryId } = require('../src/public/js/crypto');
-const VaultCrypto = require('../src/public/js/crypto');
+const VaultCrypto = require('../src/public/js/crypto/crypto');
 
 let findCallCount = 0;
 let capturedQuery;
@@ -235,7 +234,7 @@ test("GET single entry returns serialized vault entry", async () => {
 test("create new entry with valid entry ID", async () => {
     const sessionCookie = await loginResponse()
 
-    const cryptoEntryId = generateEntryId()
+    const cryptoEntryId = VaultCrypto.generateEntryId()
     const response = await app.inject({
         method: 'POST',
         url: '/api/vault-entries',

@@ -1,0 +1,19 @@
+<main>
+    <h1>{{ title }}</h1>
+    <form id="editNoteForm">
+        <label for="editNoteTitle">Title</label>
+        <input type="text" name="editNoteTitle" required id="editNoteTitle">
+        <br>
+
+        <label for="editNoteContent">Note</label>
+        <textarea name="editNoteContent" id="editNoteContent"></textarea>
+        <br>
+
+        <button type="submit" id="editNoteSaveButton">Save Note</button>
+        <br>
+        <a href="#" id="cancelEditLink">Cancel Edit</a>
+        <a href="/vault">Go back to Vault</a>
+
+        <p id="editNoteMessage" role="status" aria-live="polite"></p>
+    </form>
+</main>

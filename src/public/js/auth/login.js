@@ -48,7 +48,7 @@
                 if (vaultResponse.status === 404) {
                     window.location.replace("/vault/setup");
                 } else if (vaultResponse.ok) {
-                    window.location.replace("/vault/unlock");
+                    window.location.replace("/vault");
                 } else {
                     throw new Error("Unable to determine vault setup status");
                 }

@@ -11,7 +11,7 @@
         if (worker) return worker;
 
         worker = new SharedWorker(
-            "/public/js/vault-worker.js",
+            "/public/js/workers/vault-worker.js",
             { name: "digital-vault" }
         );
 

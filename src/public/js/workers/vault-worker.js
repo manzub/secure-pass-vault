@@ -3,8 +3,8 @@
 
 importScripts(
     "/public/vendor/argon2.umd.min.js",
-    "/public/js/crypto.js",
-    "/public/js/key-derivation.js"
+    "/public/js/crypto/crypto.js",
+    "/public/js/crypto/key-derivation.js"
 );
 
 let vaultKey = null;

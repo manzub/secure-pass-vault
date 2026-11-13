@@ -1,35 +1,14 @@
 (function () {
     "use strict";
 
-    document.addEventListener("DOMContentLoaded", async () => {
-        const messageElement = document.getElementById("noteMessage");
-        const saveButton = document.getElementById("saveNoteButton");
-
-        saveButton.disabled = true;
-
-        try {
-            const result = await window.VaultWorkerClient.send("STATUS");
-
-            if (result.stale) {
-                messageElement.textContent = "Vault status changed. Please refresh.";
-                return;
-            }
-
-            if (!result.unlocked) {
-                window.VaultShell.showView("unlock")
-                return;
-            }
-
-            saveButton.disabled = false;
-
-        } catch (error) {
-            messageElement.textContent = "Unable to check vault status.";
-        }
-
-        // ADD NOTE ENTRY
+    document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("createNoteForm");
-        const titleInput = document.getElementById("noteTitle");
-        const contentInput = document.getElementById("noteContent");
+        const titleInput = document.getElementById("createNoteTitle");
+        const contentInput = document.getElementById("createNoteContent");
+        const saveButton = document.getElementById("createNoteSaveButton");
+        const messageElement = document.getElementById("createNoteMessage");
+
+        if (!form) return;
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -53,9 +32,11 @@
                 });
 
                 form.reset();
+                messageElement.textContent = "";
 
                 window.dispatchEvent(new CustomEvent("vault:entries-changed"));
                 window.VaultShell.showView("dashboard");
+
             } catch (error) {
                 messageElement.textContent =
                     error.message || "Unable to save note.";

@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const VaultCrypto = require("../src/public/js/crypto");
+const VaultCrypto = require("../src/public/js/crypto/crypto");
 const { ObjectId } = require("mongodb");
 
 const testUserId = new ObjectId()

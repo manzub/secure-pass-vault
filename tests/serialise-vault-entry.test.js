@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { Binary } = require("mongodb");
 const { serializeVaultEntry } = require("../src/utils/serialize-vault-entry");
-const VaultCrypto = require("../src/public/js/crypto");
+const VaultCrypto = require("../src/public/js/crypto/crypto");
 
 const testEntryId = VaultCrypto.generateEntryId();
 const testUserId = VaultCrypto.generateEntryId();

@@ -3,11 +3,11 @@
     
     const VaultKeyDerivation = typeof window !== "undefined"
         ? window.VaultKeyDerivation
-        : require("./key-derivation");
+        : require("../crypto/key-derivation");
 
     const VaultCrypto = typeof window !== "undefined"
         ? window.VaultCrypto
-        : require("./crypto");
+        : require("../crypto/crypto");
 
     async function initialiseVault(unlockSecret) {
         const vaultSetup = await VaultKeyDerivation.setupVault(unlockSecret);

@@ -1,0 +1,19 @@
+<h1>{{ title }}</h1>
+<p>Create New Entry</p>
+<form id="createNoteForm">
+    <label for="createNoteTitle">Title</label>
+    <input type="text" name="createNoteTitle" required id="createNoteTitle">
+    <br>
+
+    <label for="createNoteContent">Note</label>
+    <textarea name="createNoteContent" id="createNoteContent"></textarea>
+    <br>
+
+    <button type="submit" id="createNoteSaveButton">Save Note</button>
+    <br>
+    <button type="button" data-view="dashboard">
+        Back to Vault
+    </button>
+
+    <p id="createNoteMessage" role="status" aria-live="polite"></p>
+</form>

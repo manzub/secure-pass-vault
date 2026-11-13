@@ -1,0 +1,31 @@
+{% extends "layouts/base.njk" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div id="vaultShell">
+
+    <div id="vaultUnlockView" hidden>
+        {% include "partials/vault/unlock.njk" %}
+    </div>
+
+    <div id="vaultDashboardView" hidden>
+        {% include "partials/vault/dashboard.njk" %}
+    </div>
+
+    <div id="vaultCreateNoteView" hidden>
+        {% include "partials/vault/create-note.njk" %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="/public/js/core/vault-worker-client.js"></script>
+<script src="/public/js/core/vault-entry-client.js"></script>
+<script src="/public/js/core/vault-shell.js"></script>
+
+<script src="/public/js/views/create-note.js"></script>
+<script src="/public/js/views/unlock.js"></script>
+<script src="/public/js/views/dashboard.js"></script>
+{% endblock %}

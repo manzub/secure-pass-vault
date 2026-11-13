@@ -73,9 +73,10 @@
                     secretInput.value = "";
 
                     unlockMessage.textContent = "Vault unlocked successfully";
-
+                    
                     if (window.VaultShell) {
                         window.VaultShell.showView("dashboard");
+                        unlockMessage.textContent = "";
                         window.dispatchEvent(new CustomEvent("vault:unlocked"));
                     }
                 } catch (error) {

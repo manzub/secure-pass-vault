@@ -5,14 +5,8 @@ async function vaultPageRoutes(fastify, options) {
     const { vaultSettingsCollection } = options
 
     fastify.get("/vault", { preHandler: requireAuth }, async function (request, reply) {
-        return reply.view("pages/vault-dashboard.njk", {
+        return reply.view("pages/vault.njk", {
             title: "My Vault"
-        });
-    });
-
-    fastify.get("/vault/notes/new", { preHandler: requireAuth }, async function (request, reply) {
-        return reply.view("pages/vault-create-note.njk", {
-            title: "Create Note"
         });
     });
 
@@ -22,16 +16,12 @@ async function vaultPageRoutes(fastify, options) {
         const existingSettings = await vaultSettingsCollection.findOne({ userId })
 
         if (existingSettings) {
-            return reply.redirect('/vault/unlock')
+            return reply.redirect('/vault')
         }
 
         return reply.view("pages/vault-setup.njk", {
             title: "Set Up Your Vault"
         });
-    });
-
-    fastify.get("/vault/unlock", { preHandler: requireAuth }, async function (request, reply) {
-        return reply.redirect("/vault");
     });
 
     fastify.get("/vault/notes/:entryId", { preHandler: requireAuth }, async function (request, reply) {
