@@ -8,6 +8,12 @@
         const saveButton = document.getElementById("createNoteSaveButton");
         const messageElement = document.getElementById("createNoteMessage");
 
+        window.addEventListener("vault:locked", () => {
+            form.reset();
+            messageElement.textContent = "";
+            saveButton.disabled = false;
+        });
+
         if (!form) return;
 
         form.addEventListener("submit", async (event) => {

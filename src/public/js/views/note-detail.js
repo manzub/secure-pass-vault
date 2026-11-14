@@ -12,7 +12,11 @@
 
         if (!titleElement || !contentElement || !messageElement) return;
 
+        let loadGeneration = 0;
+
         window.addEventListener("vault:note-selected", async (event) => {
+            const generation = ++loadGeneration;
+
             const entryId = event.detail.entryId;
             currentEntryId = entryId;
 
@@ -34,6 +38,8 @@
                     throw new Error("Requested entry is not a note");
                 }
 
+                if (generation !== loadGeneration) return;
+
                 titleElement.textContent = note.title || "Untitled";
                 contentElement.textContent = note.content || "";
 
@@ -43,9 +49,23 @@
                 editButton.disabled = false;
 
             } catch (error) {
+                if (generation !== loadGeneration) return;
+                
                 messageElement.textContent =
                     error.message || "Unable to load note.";
             }
+        });
+
+        window.addEventListener("vault:locked", () => {
+            currentEntryId = null;
+            loadGeneration++;
+
+            titleElement.textContent = "";
+            contentElement.textContent = "";
+            messageElement.textContent = "";
+
+            deleteButton.disabled = true;
+            editButton.disabled = true;
         });
 
         // delete button

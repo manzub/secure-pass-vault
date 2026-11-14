@@ -53,6 +53,15 @@
             }
         });
 
+        window.addEventListener("vault:locked", () => {
+            loadGeneration++;
+            currentEntryId = null;
+
+            form.reset();
+            saveButton.disabled = true;
+            messageElement.textContent = "";
+        });
+
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 

@@ -82,8 +82,12 @@
                     throw new Error("Unable to confirm vault lock");
                 }
 
+                // clear hidden DOM contents
+                window.dispatchEvent(new CustomEvent("vault:locked"));
+                // clear html contents
                 document.getElementById("vaultEntries").replaceChildren();
 
+                // redirect to unlock page
                 statusElement.textContent = "Vault locked";
                 window.VaultShell.showView("unlock");
 
