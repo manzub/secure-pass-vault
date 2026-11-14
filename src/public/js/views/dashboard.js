@@ -27,10 +27,19 @@
                 const entryElement = document.createElement("div");
                 const titleElement = document.createElement("h3");
                 const typeElement = document.createElement("p");
-                const linkElement = document.createElement("a");
+                const linkElement = document.createElement("button");
 
-                linkElement.href = `/vault/notes/${encodeURIComponent(entry.entryId)}`;
+                linkElement.type = "button";
+                linkElement.className = "vault-note-link";
                 linkElement.textContent = entry.title || "Untitled";
+
+                linkElement.addEventListener("click", () => {
+                    window.dispatchEvent(new CustomEvent("vault:note-selected", {
+                        detail: {
+                            entryId: entry.entryId
+                        }
+                    }));
+                });
 
                 titleElement.textContent = entry.title || "Untitled";
                 typeElement.textContent = entry.type || "Unknown";

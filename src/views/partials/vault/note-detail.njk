@@ -1,12 +1,20 @@
 <h1>{{ title }}</h1>
-<div id="noteDetail">
-    <h3 id="detailNoteTitle"></h3>
-    <div id="content">
-        <pre style="white-space: pre-wrap;overflow-wrap: anywhere" id="detailNoteContent"></pre>
-    </div>
-    <p id="detailNoteMessage" role="status" aria-live="polite"></p>
-    <br>
-    <a href="#" id="detailEditButton">Edit Note</a>
-    <button type="button" id="detailDeleteButton" disabled>Delete Note</button>
-    <button type="button" data-view="dashboard">Go Back</button>
-</div>
+<section id="noteDetail">
+    <button type="button" data-view="dashboard">
+        Back to Vault
+    </button>
+
+    <h1 id="detailNoteTitle"></h1>
+
+    <pre id="detailNoteContent" style="white-space: pre-wrap; overflow-wrap: anywhere;"></pre>
+
+    <p id="detailNoteMessage" role="status"></p>
+
+    <button type="button" id="detailEditButton">
+        Edit Note
+    </button>
+
+    <button type="button" id="detailDeleteButton" disabled>
+        Delete Note
+    </button>
+</section>

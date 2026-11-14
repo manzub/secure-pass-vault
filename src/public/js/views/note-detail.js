@@ -1,75 +1,93 @@
 (function () {
     "use strict";
 
-    document.addEventListener("DOMContentLoaded", async () => {
+    document.addEventListener("DOMContentLoaded", () => {
+        let currentEntryId = null;
+
+        const titleElement = document.getElementById("detailNoteTitle");
+        const contentElement = document.getElementById("detailNoteContent");
         const messageElement = document.getElementById("detailNoteMessage");
         const deleteButton = document.getElementById("detailDeleteButton");
+        const editButton = document.getElementById("detailEditButton");
 
-        try {
-            const status = await window.VaultWorkerClient.send("STATUS");
+        if (!titleElement || !contentElement || !messageElement) return;
 
-            if (status.stale) {
-                messageElement.textContent = "Vault status changed. Please refresh.";
-                return;
-            }
+        window.addEventListener("vault:note-selected", async (event) => {
+            const entryId = event.detail.entryId;
+            currentEntryId = entryId;
 
-            if (!status.unlocked) {
-                window.VaultShell.showView("unlock")
-                return;
-            }
-
+            titleElement.textContent = "";
+            contentElement.textContent = "";
             messageElement.textContent = "Loading note...";
 
-            // fetch and decrypt
-            const entryId = window.location.pathname.split("/").pop();
+            deleteButton.disabled = true;
+            editButton.disabled = true;
 
-            // create edit button
-            document.getElementById("detailEditButton").href =
-                `/vault/notes/${encodeURIComponent(entryId)}/edit`;
+            try {
+                const encryptedEntry =
+                    await window.VaultEntryClient.getEntry(entryId);
 
-            const encryptedEntry = await window.VaultEntryClient.getEntry(entryId);
+                const note =
+                    await window.VaultEntryClient.decryptEntry(encryptedEntry);
 
-            const note = await window.VaultEntryClient.decryptEntry(encryptedEntry);
-
-            if (note.type !== "note") {
-                throw new Error("Requested entry is not a note");
-            }
-
-            document.getElementById("detailNoteTitle").textContent =
-                note.title || "Untitled";
-
-            document.getElementById("detailNoteContent").textContent =
-                note.content || "";
-
-            messageElement.textContent = "";
-
-            // delete button
-            deleteButton.disabled = false;
-            
-            deleteButton.addEventListener("click", async () => {
-                const confirmed = window.confirm(
-                    "Permanently delete this note? This action cannot be undone."
-                );
-
-                if (!confirmed) return;
-
-                deleteButton.disabled = true;
-                messageElement.textContent = "Deleting note...";
-
-                try {
-                    await window.VaultEntryClient.deleteEntry(entryId);
-
-                    window.VaultShell.showView("unlock");
-                } catch (error) {
-                    messageElement.textContent =
-                        error.message || "Unable to delete note.";
-
-                    deleteButton.disabled = false;
+                if (note.type !== "note") {
+                    throw new Error("Requested entry is not a note");
                 }
-            });
 
-        } catch (error) {
-            messageElement.textContent = "Unable to load note.";
-        }
+                titleElement.textContent = note.title || "Untitled";
+                contentElement.textContent = note.content || "";
+
+                messageElement.textContent = "";
+
+                deleteButton.disabled = false;
+                editButton.disabled = false;
+
+            } catch (error) {
+                messageElement.textContent =
+                    error.message || "Unable to load note.";
+            }
+        });
+
+        // delete button
+        deleteButton.addEventListener("click", async () => {
+            if (!currentEntryId) return;
+
+            const confirmed = window.confirm(
+                "Permanently delete this note? This cannot be undone."
+            );
+
+            if (!confirmed) return;
+
+            deleteButton.disabled = true;
+            messageElement.textContent = "Deleting note...";
+
+            try {
+                await window.VaultEntryClient.deleteEntry(currentEntryId);
+
+                currentEntryId = null;
+                titleElement.textContent = "";
+                contentElement.textContent = "";
+                messageElement.textContent = "";
+
+                window.dispatchEvent(new CustomEvent("vault:entries-changed"));
+                window.VaultShell.showView("dashboard");
+
+            } catch (error) {
+                messageElement.textContent =
+                    error.message || "Unable to delete note.";
+                deleteButton.disabled = false;
+            }
+        });
+
+        // edit button
+        editButton.addEventListener("click", () => {
+            if (!currentEntryId) return;
+
+            window.dispatchEvent(new CustomEvent("vault:note-edit", {
+                detail: {
+                    entryId: currentEntryId
+                }
+            }));
+        });
     });
 })();

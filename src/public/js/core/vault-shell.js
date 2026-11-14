@@ -5,7 +5,9 @@
         const views = {
             unlock: document.getElementById("vaultUnlockView"),
             dashboard: document.getElementById("vaultDashboardView"),
-            createNote: document.getElementById("vaultCreateNoteView")
+            createNote: document.getElementById("vaultCreateNoteView"),
+            noteDetail: document.getElementById("vaultNoteDetailView"),
+            editNote: document.getElementById("vaultEditNoteView")
         }
 
         for (const [name, element] of Object.entries(views)) {
@@ -16,6 +18,14 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+        window.addEventListener("vault:note-selected", () => {
+            window.VaultShell.showView("noteDetail");
+        });
+
+        window.addEventListener("vault:note-edit", () => {
+            window.VaultShell.showView("editNote");
+        });
+
         const vaultShell = document.getElementById("vaultShell");
 
         vaultShell.addEventListener("click", (event) => {
@@ -25,7 +35,7 @@
 
             const viewName = button.dataset.view;
 
-            const allowedViews = ["dashboard", "createNote"];
+            const allowedViews = ["dashboard", "createNote", "noteDetail"];
 
             if (!allowedViews.includes(viewName)) return;
 

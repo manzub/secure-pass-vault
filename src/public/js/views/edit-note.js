@@ -1,58 +1,64 @@
 (function () {
     "use strict";
 
-    document.addEventListener("DOMContentLoaded", async () => {
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("editNoteForm");
         const titleInput = document.getElementById("editNoteTitle");
         const contentInput = document.getElementById("editNoteContent");
         const saveButton = document.getElementById("editNoteSaveButton");
         const messageElement = document.getElementById("editNoteMessage");
-        const cancelLink = document.getElementById("cancelEditLink");
 
-        saveButton.disabled = true;
+        if (!form) return;
 
-        const pathParts = window.location.pathname.split("/");
-        const entryId = pathParts[pathParts.length - 2];
+        let currentEntryId = null;
+        let loadGeneration = 0;
 
-        cancelLink.href = `/vault/notes/${encodeURIComponent(entryId)}`;
+        window.addEventListener("vault:note-edit", async (event) => {
+            const entryId = event.detail?.entryId;
+            if (!entryId) return;
 
-        try {
-            const status = await window.VaultWorkerClient.send("STATUS");
+            const generation = ++loadGeneration;
+            currentEntryId = null;
 
-            if (status.stale) {
-                messageElement.textContent = "Vault status changed. Please refresh.";
-                return;
-            }
-
-            if (!status.unlocked) {
-                window.VaultShell.showView("unlock");
-                return;
-            }
-
+            form.reset();
+            saveButton.disabled = true;
             messageElement.textContent = "Loading note...";
 
-            const encryptedEntry = await window.VaultEntryClient.getEntry(entryId);
-            const note = await window.VaultEntryClient.decryptEntry(encryptedEntry);
+            try {
+                const encryptedEntry =
+                    await window.VaultEntryClient.getEntry(entryId);
 
-            if (note.type !== "note") {
-                throw new Error("Requested entry is not a note");
+                const note =
+                    await window.VaultEntryClient.decryptEntry(encryptedEntry);
+
+                // Ignore results from an older request.
+                if (generation !== loadGeneration) return;
+
+                if (note.type !== "note") {
+                    throw new Error("Requested entry is not a note");
+                }
+
+                currentEntryId = entryId;
+                titleInput.value = note.title || "";
+                contentInput.value = note.content || "";
+
+                messageElement.textContent = "";
+                saveButton.disabled = false;
+
+            } catch (error) {
+                if (generation !== loadGeneration) return;
+
+                messageElement.textContent =
+                    error.message || "Unable to load note.";
             }
-
-            titleInput.value = note.title || "";
-            contentInput.value = note.content || "";
-
-            messageElement.textContent = "";
-            saveButton.disabled = false;
-
-        } catch (error) {
-            messageElement.textContent = "Unable to load note for editing.";
-        }
-
-        // update form submit
-        const form = document.getElementById("editNoteForm");
+        });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
+            if (!currentEntryId) return;
+
+            const entryId = currentEntryId;
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
 
@@ -71,14 +77,23 @@
                     content
                 });
 
-                form.reset();
+                currentEntryId = null;
+                loadGeneration++;
 
-                window.location.replace(
-                    `/vault/notes/${encodeURIComponent(entryId)}`
-                );
+                form.reset();
+                messageElement.textContent = "";
+
+                window.dispatchEvent(new CustomEvent("vault:entries-changed"));
+
+                // Return to the updated note, not the dashboard.
+                window.dispatchEvent(new CustomEvent("vault:note-selected", {
+                    detail: { entryId }
+                }));
 
             } catch (error) {
-                messageElement.textContent = error.message || "Unable to update note.";
+                messageElement.textContent =
+                    error.message || "Unable to save changes.";
+            } finally {
                 saveButton.disabled = false;
             }
         });

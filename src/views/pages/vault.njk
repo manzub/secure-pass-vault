@@ -17,6 +17,13 @@
         {% include "partials/vault/create-note.njk" %}
     </div>
 
+    <div id="vaultNoteDetailView" hidden>
+        {% include "partials/vault/note-detail.njk" %}
+    </div>
+
+    <div id="vaultEditNoteView" hidden>
+        {% include "partials/vault/edit-note.njk" %}
+    </div>
 </div>
 {% endblock %}
 
@@ -25,6 +32,8 @@
 <script src="/public/js/core/vault-entry-client.js"></script>
 <script src="/public/js/core/vault-shell.js"></script>
 
+<script src="/public/js/views/edit-note.js"></script>
+<script src="/public/js/views/note-detail.js"></script>
 <script src="/public/js/views/create-note.js"></script>
 <script src="/public/js/views/unlock.js"></script>
 <script src="/public/js/views/dashboard.js"></script>
