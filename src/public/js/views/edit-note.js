@@ -12,6 +12,7 @@
 
         let currentEntryId = null;
         let loadGeneration = 0;
+        let saveGeneration = 0;
 
         window.addEventListener("vault:note-edit", async (event) => {
             const entryId = event.detail?.entryId;
@@ -19,6 +20,7 @@
 
             const generation = ++loadGeneration;
             currentEntryId = null;
+            saveGeneration++;
 
             form.reset();
             saveButton.disabled = true;
@@ -55,6 +57,7 @@
 
         window.addEventListener("vault:locked", () => {
             loadGeneration++;
+            saveGeneration++;
             currentEntryId = null;
 
             form.reset();
@@ -79,12 +82,16 @@
             saveButton.disabled = true;
             messageElement.textContent = "Encrypting and saving changes...";
 
+            const generation = ++saveGeneration;
+
             try {
                 await window.VaultEntryClient.updateEntry(entryId, {
                     type: "note",
                     title,
                     content
                 });
+
+                if (generation !== saveGeneration) return;
 
                 currentEntryId = null;
                 loadGeneration++;
@@ -100,10 +107,14 @@
                 }));
 
             } catch (error) {
+                if (generation !== saveGeneration) return;
+
                 messageElement.textContent =
                     error.message || "Unable to save changes.";
             } finally {
-                saveButton.disabled = false;
+                if (generation === saveGeneration) {
+                    saveButton.disabled = false;
+                }
             }
         });
     });

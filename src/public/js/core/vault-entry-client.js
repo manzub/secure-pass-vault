@@ -16,7 +16,7 @@
             throw new Error(encrypted.message || "Unable to encrypt entry");
         }
 
-        const response = await fetch("/api/vault-entries", {
+        const response = await window.AuthFetch("/api/vault-entries", {
             method: "POST",
             credentials: "same-origin",
             headers: {
@@ -37,7 +37,7 @@
     }
 
     async function getEntries() {
-        const response = await fetch("/api/vault-entries", {
+        const response = await window.AuthFetch("/api/vault-entries", {
             method: "GET",
             credentials: "same-origin",
             cache: "no-store"
@@ -57,7 +57,7 @@
             throw new Error("Invalid entry ID");
         }
 
-        const response = await fetch(
+        const response = await window.AuthFetch(
             `/api/vault-entries/${encodeURIComponent(entryId)}`,
             {
                 method: "GET",
@@ -96,7 +96,7 @@
 
         const { cryptoVersion, iv, ciphertext } = encrypted.entry;
 
-        const response = await fetch(
+        const response = await window.AuthFetch(
             `/api/vault-entries/${encodeURIComponent(entryId)}`,
             {
                 method: "PUT",

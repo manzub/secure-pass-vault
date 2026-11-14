@@ -8,7 +8,11 @@
         const saveButton = document.getElementById("createNoteSaveButton");
         const messageElement = document.getElementById("createNoteMessage");
 
+        let saveGeneration = 0;
+
         window.addEventListener("vault:locked", () => {
+            saveGeneration++
+
             form.reset();
             messageElement.textContent = "";
             saveButton.disabled = false;
@@ -30,12 +34,16 @@
             saveButton.disabled = true;
             messageElement.textContent = "Encrypting and saving note...";
 
+            const generation = ++saveGeneration;
+
             try {
                 await window.VaultEntryClient.createEntry({
                     type: "note",
                     title,
                     content
                 });
+
+                if (generation !== saveGeneration) return;
 
                 form.reset();
                 messageElement.textContent = "";
@@ -44,10 +52,14 @@
                 window.VaultShell.showView("dashboard");
 
             } catch (error) {
+                if (generation !== saveGeneration) return;
+
                 messageElement.textContent =
                     error.message || "Unable to save note.";
             } finally {
-                saveButton.disabled = false;
+                if (generation === saveGeneration) {
+                    saveButton.disabled = false;
+                }
             }
         });
     });

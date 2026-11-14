@@ -20,19 +20,40 @@ function clearVault() {
 }
 
 async function getAuthenticatedUserId() {
-    const response = await fetch("/api/auth/session", {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store"
-    });
+    let response;
 
-    if (!response.ok) {
-        throw new Error("Authentication required");
+    try {
+        response = await fetch("/api/auth/session", {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+    } catch (error) {
+        clearVault();
+        throw new Error("Unable to verify session");
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+        clearVault();
 
-    if (typeof data.userId !== "string" || !data.userId) {
+        if (response.status === 401) {
+            throw new Error("Session expired");
+        }
+
+        throw new Error("Session verification failed");
+    }
+
+    let data;
+
+    try {
+        data = await response.json();
+    } catch (error) {
+        clearVault();
+        throw new Error("Invalid session response");
+    }
+
+    if (typeof data?.userId !== "string" || !data.userId) {
+        clearVault();
         throw new Error("Invalid session identity");
     }
 
