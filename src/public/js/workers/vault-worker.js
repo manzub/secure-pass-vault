@@ -20,6 +20,16 @@ function clearVault() {
 }
 
 async function getAuthenticatedUserId() {
+
+    const generation = operationGeneration;
+
+    function clearIfCurrent() {
+        if (generation === operationGeneration) {
+            clearVault();
+        }
+    }
+
+
     let response;
 
     try {
@@ -29,12 +39,12 @@ async function getAuthenticatedUserId() {
             cache: "no-store"
         });
     } catch (error) {
-        clearVault();
+        clearIfCurrent();
         throw new Error("Unable to verify session");
     }
 
     if (!response.ok) {
-        clearVault();
+        clearIfCurrent();
 
         if (response.status === 401) {
             throw new Error("Session expired");
@@ -48,12 +58,12 @@ async function getAuthenticatedUserId() {
     try {
         data = await response.json();
     } catch (error) {
-        clearVault();
+        clearIfCurrent();
         throw new Error("Invalid session response");
     }
 
     if (typeof data?.userId !== "string" || !data.userId) {
-        clearVault();
+        clearIfCurrent();
         throw new Error("Invalid session identity");
     }
 
@@ -207,7 +217,17 @@ self.onconnect = function (event) {
 
                     const currentUserId = await getAuthenticatedUserId();
 
-                    if (generation !== operationGeneration || currentUserId !== userId) {
+                    if (generation !== operationGeneration) {
+                        port.postMessage({
+                            type: "UNLOCK_RESULT",
+                            requestId,
+                            success: false,
+                            message: "Unlock operation cancelled"
+                        });
+                        break;
+                    }
+
+                    if (currentUserId !== userId) {
                         clearVault();
 
                         port.postMessage({
