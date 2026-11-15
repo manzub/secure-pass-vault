@@ -4,29 +4,24 @@
 importScripts(
     "/public/vendor/argon2.umd.min.js",
     "/public/js/crypto/crypto.js",
-    "/public/js/crypto/key-derivation.js"
+    "/public/js/crypto/key-derivation.js",
+    "/public/js/workers/vault-state.js"
 );
 
-let vaultKey = null;
-let operationGeneration = 0;
-let vaultOwnerId = null;
+const vaultState = createVaultState();
 
 const workerInstanceId = crypto.randomUUID();
 
 function clearVault() {
-    operationGeneration++;
-    vaultKey = null;
-    vaultOwnerId = null;
+    vaultState.lock();
 }
 
 async function getAuthenticatedUserId() {
 
-    const generation = operationGeneration;
+    const generation = vaultState.getGeneration();
 
     function clearIfCurrent() {
-        if (generation === operationGeneration) {
-            clearVault();
-        }
+        vaultState.lockIfCurrent(generation);
     }
 
 
@@ -71,9 +66,9 @@ async function getAuthenticatedUserId() {
 }
 
 async function requireUnlockedVault() {
-    const generation = operationGeneration;
-    const ownerId = vaultOwnerId;
-    const key = vaultKey;
+    const generation = vaultState.getGeneration();
+    const ownerId = vaultState.getOwnerId();
+    const key = vaultState.getKey();
 
     if (!key || !ownerId) {
         throw new Error("Vault is locked");
@@ -84,22 +79,21 @@ async function requireUnlockedVault() {
     try {
         currentUserId = await getAuthenticatedUserId();
     } catch (error) {
-        if (generation === operationGeneration) {
-            clearVault();
-        }
+        vaultState.lockIfCurrent(generation);
+
         throw new Error("Authentication required");
     }
 
-    if (generation !== operationGeneration) {
+    if (!vaultState.isCurrent(generation)) {
         throw new Error("Vault state changed");
     }
 
     if (currentUserId !== ownerId) {
-        clearVault();
+        vaultState.lockIfCurrent(generation);
         throw new Error("Vault session mismatch");
     }
 
-    return key;
+    return { key, generation };
 }
 
 self.onconnect = function (event) {
@@ -110,12 +104,12 @@ self.onconnect = function (event) {
 
         switch (type) {
             case "STATUS": {
-                const generation = operationGeneration;
+                const generation = vaultState.getGeneration();
 
                 try {
                     const currentUserId = await getAuthenticatedUserId();
 
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         port.postMessage({
                             type: "STATUS_RESULT",
                             requestId,
@@ -125,19 +119,19 @@ self.onconnect = function (event) {
                         break;
                     }
 
-                    if (vaultOwnerId !== currentUserId) {
-                        clearVault();
+                    if (vaultState.getOwnerId() !== currentUserId) {
+                        vaultState.lockIfCurrent(generation);
                     }
 
                     port.postMessage({
                         type: "STATUS_RESULT",
                         requestId,
                         workerInstanceId,
-                        unlocked: vaultKey !== null
+                        unlocked: vaultState.isUnlocked()
                     });
 
                 } catch (error) {
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         port.postMessage({
                             type: "STATUS_RESULT",
                             requestId,
@@ -147,7 +141,7 @@ self.onconnect = function (event) {
                         break;
                     }
 
-                    clearVault();
+                    vaultState.lockIfCurrent(generation);
 
                     port.postMessage({
                         type: "STATUS_RESULT",
@@ -172,7 +166,7 @@ self.onconnect = function (event) {
 
             case "UNLOCK": {
                 clearVault();
-                const generation = operationGeneration;
+                const generation = vaultState.getGeneration();
 
                 try {
                     const { unlockSecret, settings } = event.data;
@@ -205,7 +199,7 @@ self.onconnect = function (event) {
                         metadata
                     );
 
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         port.postMessage({
                             type: "UNLOCK_RESULT",
                             requestId,
@@ -217,7 +211,7 @@ self.onconnect = function (event) {
 
                     const currentUserId = await getAuthenticatedUserId();
 
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         port.postMessage({
                             type: "UNLOCK_RESULT",
                             requestId,
@@ -228,7 +222,7 @@ self.onconnect = function (event) {
                     }
 
                     if (currentUserId !== userId) {
-                        clearVault();
+                        vaultState.lockIfCurrent(generation);
 
                         port.postMessage({
                             type: "UNLOCK_RESULT",
@@ -239,9 +233,7 @@ self.onconnect = function (event) {
                         break;
                     }
 
-
-                    vaultKey = key;
-                    vaultOwnerId = userId
+                    vaultState.unlock(key, userId, generation);
 
                     port.postMessage({
                         type: "UNLOCK_RESULT",
@@ -255,7 +247,7 @@ self.onconnect = function (event) {
                         type: "UNLOCK_RESULT",
                         requestId,
                         success: false,
-                        message: generation === operationGeneration
+                        message: vaultState.isCurrent(generation)
                             ? "Unable to unlock vault"
                             : "Unlock operation cancelled"
                     });
@@ -279,8 +271,7 @@ self.onconnect = function (event) {
                         throw new Error("Invalid entry data");
                     }
 
-                    const key = await requireUnlockedVault();
-                    const generation = operationGeneration;
+                    const { key, generation } = await requireUnlockedVault();
 
                     const { iv, ciphertext } = await VaultCrypto.encryptPayload(
                         payload,
@@ -289,7 +280,7 @@ self.onconnect = function (event) {
                         cryptoVersion
                     );
 
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         throw new Error("Vault state changed during encryption");
                     }
 
@@ -333,8 +324,7 @@ self.onconnect = function (event) {
                         throw new Error("Invalid encrypted entry");
                     }
 
-                    const key = await requireUnlockedVault();
-                    const generation = operationGeneration;
+                    const { key, generation } = await requireUnlockedVault();
 
                     const iv = VaultCrypto.base64ToArrayBuffer(entry.iv);
                     const ciphertext = VaultCrypto.base64ToArrayBuffer(entry.ciphertext);
@@ -351,7 +341,7 @@ self.onconnect = function (event) {
                         entry.cryptoVersion
                     );
 
-                    if (generation !== operationGeneration) {
+                    if (!vaultState.isCurrent(generation)) {
                         throw new Error("Vault state changed during decryption");
                     }
 
