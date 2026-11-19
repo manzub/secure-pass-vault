@@ -7,6 +7,7 @@
     let entriesContainer;
     let searchInput;
     let activeFilter = "all";
+    let activeSort = "name-asc";
 
     function renderVaultEntries() {
         const query = searchInput.value.trim().toLowerCase();
@@ -17,6 +18,35 @@
             const matchesType = activeFilter === "all" || entry.type === activeFilter;
 
             return matchesSearch && matchesType
+        });
+
+        filteredEntries.sort((a, b) => {
+            switch (activeSort) {
+                case "name-asc":
+                    return a.name.localeCompare(b.name, undefined, {
+                        sensitivity: "base"
+                    });
+
+                case "name-desc":
+                    return b.name.localeCompare(a.name, undefined, {
+                        sensitivity: "base"
+                    });
+
+                case "created-desc":
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+
+                case "created-asc":
+                    return new Date(a.createdAt) - new Date(b.createdAt);
+
+                case "updated-desc":
+                    return new Date(b.updatedAt) - new Date(a.updatedAt);
+
+                case "updated-asc":
+                    return new Date(a.updatedAt) - new Date(b.updatedAt);
+
+                default:
+                    return 0;
+            }
         });
 
         entriesContainer.replaceChildren();
@@ -36,8 +66,14 @@
             const titleElement = document.createElement("h3");
             const typeElement = document.createElement("p");
             const linkElement = document.createElement("button");
+            const websiteElement = document.createElement("p");
 
             const isPassword = entry.type === "password";
+            
+            if (isPassword && entry.website) {
+                websiteElement.textContent = entry.website;
+                websiteElement.className = "vault-entry-website";
+            }
 
             linkElement.type = "button";
             linkElement.className = "vault-note-link";
@@ -61,12 +97,18 @@
             titleElement.textContent = entry.name;
             typeElement.textContent = entry.type || "Unknown";
 
-            entryElement.append(
-                ["note", "password"].includes(entry.type)
-                    ? linkElement
-                    : titleElement,
-                typeElement
-            );
+            if (["note", "password"].includes(entry.type)) {
+                entryElement.appendChild(linkElement);
+            } else {
+                entryElement.appendChild(titleElement);
+            }
+
+            typeElement.textContent = entry.type || "Unknown";
+            entryElement.appendChild(typeElement);
+
+            if (isPassword && entry.website) {
+                entryElement.appendChild(websiteElement);
+            }
 
             entriesContainer.appendChild(entryElement);
         }
@@ -92,15 +134,20 @@
 
             if (generation !== loadGeneration) return;
 
-            searchableEntries = decryptedEntries.map(entry => {
+            searchableEntries = decryptedEntries.map((entry, index) => {
                 const isPassword = entry.type === "password";
+
+                const metadata = entries[index]
 
                 return {
                     entryId: entry.entryId,
                     type: entry.type,
                     name: (
                         isPassword ? entry.name : entry.title
-                    ) || "Untitled"
+                    ) || "Untitled",
+                    website: isPassword ? (entry.website || "") : "",
+                    createdAt: metadata.createdAt,
+                    updatedAt: metadata.updatedAt
                 };
             });
 
@@ -123,9 +170,16 @@
         const lockButton = document.getElementById("lockVaultButton");
         const logoutButton = document.getElementById("logoutButton")
         const filterButtons = document.querySelectorAll("#vaultFilters [data-filter]");
+        const sortSelect = document.getElementById("vaultSort");
+
 
         searchInput = document.getElementById("vaultSearchInput");
         searchInput.addEventListener("input", () => {
+            renderVaultEntries();
+        });
+
+        sortSelect.addEventListener("change", () => {
+            activeSort = sortSelect.value;
             renderVaultEntries();
         });
 
@@ -141,6 +195,9 @@
             searchableEntries = [];
             searchInput.value = "";
             activeFilter = "all";
+            activeSort = "name-asc";
+            sortSelect.value = activeSort;
+
 
             filterButtons.forEach(button => {
                 button.setAttribute(
@@ -247,8 +304,8 @@
             window.VaultShell.showView("dashboard");
             statusElement.textContent = "Vault unlocked";
 
-            await loadVaultEntries();
-
+            window.dispatchEvent(new CustomEvent("vault:unlocked"));
+            
         } catch (error) {
             statusElement.textContent = "Unable to check vault status";
         }

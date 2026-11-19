@@ -11,9 +11,62 @@ importScripts(
 const vaultState = createVaultState();
 
 const workerInstanceId = crypto.randomUUID();
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
+
+let lastActivity = 0;
+let inactivityTimer = null;
+
+const connectedPorts = new Set();
+
+function notifyVaultLocked() {
+    for (const port of connectedPorts) {
+        try {
+            port.postMessage({
+                type: "VAULT_AUTO_LOCKED",
+                workerInstanceId
+            });
+        } catch (error) {
+            connectedPorts.delete(port);
+        }
+    }
+}
+
+function clearInactivityTimer() {
+    if (inactivityTimer !== null) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+    }
+}
+
+function recordActivity() {
+    if (!vaultState.isUnlocked()) return;
+
+    lastActivity = Date.now();
+
+    clearInactivityTimer();
+
+    inactivityTimer = setTimeout(() => {
+        inactivityTimer = null;
+        enforceInactivityTimeout();
+    }, INACTIVITY_TIMEOUT);
+}
+
+function enforceInactivityTimeout() {
+    if (!vaultState.isUnlocked()) return false;
+
+    if (Date.now() - lastActivity >= INACTIVITY_TIMEOUT) {
+        clearVault();
+        notifyVaultLocked();
+        return true;
+    }
+
+    return false;
+}
 
 function clearVault() {
+    clearInactivityTimer();
     vaultState.lock();
+    lastActivity = 0
 }
 
 async function getAuthenticatedUserId() {
@@ -66,6 +119,8 @@ async function getAuthenticatedUserId() {
 }
 
 async function requireUnlockedVault() {
+    enforceInactivityTimeout()
+
     const generation = vaultState.getGeneration();
     const ownerId = vaultState.getOwnerId();
     const key = vaultState.getKey();
@@ -84,6 +139,8 @@ async function requireUnlockedVault() {
         throw new Error("Authentication required");
     }
 
+    enforceInactivityTimeout();
+
     if (!vaultState.isCurrent(generation)) {
         throw new Error("Vault state changed");
     }
@@ -98,6 +155,8 @@ async function requireUnlockedVault() {
 
 self.onconnect = function (event) {
     const port = event.ports[0];
+
+    connectedPorts.add(port);
 
     port.onmessage = async function (event) {
         const { type, requestId } = event.data ?? {};
@@ -149,6 +208,23 @@ self.onconnect = function (event) {
                         unlocked: false
                     });
                 }
+
+                break;
+            }
+
+            case "ACTIVITY": {
+                const expired = enforceInactivityTimeout();
+
+                if (!expired && vaultState.isUnlocked()) {
+                    recordActivity();
+                }
+
+                port.postMessage({
+                    type: "ACTIVITY_RESULT",
+                    requestId,
+                    workerInstanceId,
+                    unlocked: vaultState.isUnlocked()
+                });
 
                 break;
             }
@@ -234,6 +310,7 @@ self.onconnect = function (event) {
                     }
 
                     vaultState.unlock(key, userId, generation);
+                    recordActivity()
 
                     port.postMessage({
                         type: "UNLOCK_RESULT",
@@ -279,6 +356,8 @@ self.onconnect = function (event) {
                         entryId,
                         cryptoVersion
                     );
+
+                    enforceInactivityTimeout();
 
                     if (!vaultState.isCurrent(generation)) {
                         throw new Error("Vault state changed during encryption");
@@ -340,6 +419,8 @@ self.onconnect = function (event) {
                         entry.entryId,
                         entry.cryptoVersion
                     );
+
+                    enforceInactivityTimeout();
 
                     if (!vaultState.isCurrent(generation)) {
                         throw new Error("Vault state changed during decryption");
