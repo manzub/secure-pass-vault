@@ -11,7 +11,10 @@
             dashboard: document.getElementById("vaultDashboardView"),
             createNote: document.getElementById("vaultCreateNoteView"),
             noteDetail: document.getElementById("vaultNoteDetailView"),
-            editNote: document.getElementById("vaultEditNoteView")
+            editNote: document.getElementById("vaultEditNoteView"),
+            createPassword: document.getElementById("createPasswordView"),
+            passwordDetail: document.getElementById("passwordDetailView"),
+            editPassword: document.getElementById("editPasswordView")
         }
 
         for (const [name, element] of Object.entries(views)) {
@@ -110,7 +113,7 @@
 
             const viewName = button.dataset.view;
 
-            const allowedViews = ["dashboard", "createNote", "noteDetail"];
+            const allowedViews = ["dashboard", "createNote", "noteDetail", "createPassword"];
 
             if (!allowedViews.includes(viewName)) return;
 

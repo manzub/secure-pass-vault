@@ -37,26 +37,38 @@
                 const typeElement = document.createElement("p");
                 const linkElement = document.createElement("button");
 
+                const isPassword = entry.type === "password";
+
+                const displayName = isPassword
+                    ? entry.name
+                    : entry.title;
+
+
                 linkElement.type = "button";
                 linkElement.className = "vault-note-link";
-                linkElement.textContent = entry.title || "Untitled";
+                linkElement.textContent = isPassword ? `🔑 ${displayName}` : `📝 ${displayName}`;
 
                 linkElement.addEventListener("click", () => {
-                    window.dispatchEvent(new CustomEvent("vault:note-selected", {
-                        detail: {
-                            entryId: entry.entryId
-                        }
-                    }));
+                    if (isPassword) {
+                        window.dispatchEvent(
+                            new CustomEvent("vault:password-selected", {
+                                detail: { entryId: entry.entryId }
+                            })
+                        );
+                    } else {
+                        window.dispatchEvent(new CustomEvent("vault:note-selected", {
+                            detail: {
+                                entryId: entry.entryId
+                            }
+                        }));
+                    }
                 });
 
                 titleElement.textContent = entry.title || "Untitled";
                 typeElement.textContent = entry.type || "Unknown";
 
-                if (entry.type === "note") {
-                    entryElement.append(linkElement, typeElement);
-                } else {
-                    entryElement.append(titleElement, typeElement);
-                }
+                entryElement.append(["note","password"].includes(entry.type) ? linkElement : titleElement, typeElement);
+
                 entriesContainer.appendChild(entryElement);
             }
 

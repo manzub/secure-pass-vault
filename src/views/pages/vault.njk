@@ -24,6 +24,19 @@
     <div id="vaultEditNoteView" hidden>
         {% include "partials/vault/edit-note.njk" %}
     </div>
+
+    {# password #}
+    <div id="createPasswordView" hidden>
+        {% include "partials/vault/create-password.njk" %}
+    </div>
+
+    <div id="passwordDetailView" hidden>
+        {% include "partials/vault/password-detail.njk" %}
+    </div>
+
+    <div id="editPasswordView" hidden>
+        {% include "partials/vault/edit-password.njk" %}
+    </div>
 </div>
 {% endblock %}
 
@@ -34,9 +47,15 @@
 <script src="/public/js/core/vault-shell.js"></script>
 <script src="/public/js/core/vault-sync.js"></script>
 
+{# vault actions #}
+<script src="/public/js/views/create-password.js" defer></script>
+<script src="/public/js/views/password-detail.js" defer></script>
+<script src="/public/js/views/edit-password.js" defer></script>
+
 <script src="/public/js/views/edit-note.js"></script>
 <script src="/public/js/views/note-detail.js"></script>
 <script src="/public/js/views/create-note.js"></script>
+{# core #}
 <script src="/public/js/views/unlock.js"></script>
 <script src="/public/js/views/dashboard.js"></script>
 {% endblock %}
