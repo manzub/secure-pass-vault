@@ -12,6 +12,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const message = document.getElementById("editPasswordMessage");
     const cancelButton = document.getElementById("editPasswordCancelButton");
     const saveButton = document.getElementById("editPasswordSaveButton");
+    const generateButton = document.getElementById("editGeneratePasswordButton");
+
+    // password generator options
+    const generatorLength = document.getElementById("editGeneratorLength");
+    const generatorLowercase = document.getElementById("editGeneratorLowercase");
+    const generatorUppercase = document.getElementById("editGeneratorUppercase");
+    const generatorNumbers = document.getElementById("editGeneratorNumbers");
+    const generatorSymbols = document.getElementById("editGeneratorSymbols");
+
+    generateButton.addEventListener("click", () => {
+        try {
+            const generatedPassword = PasswordGenerator.generate({
+                length: Number(generatorLength.value),
+                lowercase: generatorLowercase.checked,
+                uppercase: generatorUppercase.checked,
+                numbers: generatorNumbers.checked,
+                symbols: generatorSymbols.checked
+            });
+
+            password.value = generatedPassword;
+            password.type = "password";
+
+            message.textContent = "";
+
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    });
 
 
     if (!form) return;
@@ -97,10 +125,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("vault:password-edit", async (event) => {
         const generation = ++loadGeneration;
         const entryId = event.detail?.entryId;
-        
+
         saveGeneration++;
         saveButton.disabled = false;
-        
+
         clearForm();
 
         if (!entryId) return;

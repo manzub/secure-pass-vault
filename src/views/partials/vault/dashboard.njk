@@ -17,6 +17,27 @@
 
     <button id="logoutButton" type="button">Log Out</button>
     <br />
+    <div id="searchActions">
+        <div id="searchFormInputss">
+            <input type="search" id="vaultSearchInput" placeholder="Search passwords and notes..." autocomplete="off"
+                aria-label="Search vault entries">
+        </div>
+
+        <div id="vaultFilters" role="group" aria-label="Filter vault entries">
+            <button type="button" data-filter="all" aria-pressed="true">
+                All
+            </button>
+
+            <button type="button" data-filter="password">
+                Passwords
+            </button>
+
+            <button type="button" data-filter="note">
+                Notes
+            </button>
+        </div>
+    </div>
+    <br>
     <div id="vaultEntries">
         <p>Your vault entries will appear here.</p>
     </div>

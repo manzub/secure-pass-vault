@@ -4,6 +4,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("createPasswordForm");
     const saveButton = document.getElementById("createPasswordSaveButton");
     const message = document.getElementById("createPasswordMessage");
+    const passwordInput = document.getElementById("passwordValue");
+
+    // password generator options
+    const generatorLength = document.getElementById("generatorLength");
+    const generatorLowercase = document.getElementById("generatorLowercase");
+    const generatorUppercase = document.getElementById("generatorUppercase");
+    const generatorNumbers = document.getElementById("generatorNumbers");
+    const generatorSymbols = document.getElementById("generatorSymbols");
+
+    const generateButton = document.getElementById("generatePasswordButton");
+    generateButton.addEventListener("click", () => {
+        try {
+            const generatedPassword = PasswordGenerator.generate({
+                length: Number(generatorLength.value),
+                lowercase: generatorLowercase.checked,
+                uppercase: generatorUppercase.checked,
+                numbers: generatorNumbers.checked,
+                symbols: generatorSymbols.checked
+            });
+
+            passwordInput.value = generatedPassword;
+            passwordInput.type = "password";
+
+            message.textContent = ""
+
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    });
 
     if (!form) return;
 
@@ -25,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
             type: "password",
             name: document.getElementById("passwordName").value.trim(),
             username: document.getElementById("passwordUsername").value.trim(),
-            password: document.getElementById("passwordValue").value,
+            password: passwordInput.value,
             website: document.getElementById("passwordWebsite").value.trim(),
             notes: document.getElementById("passwordNotes").value.trim()
         };
