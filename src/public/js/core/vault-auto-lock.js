@@ -5,31 +5,28 @@
 
     let vaultUnlocked = false;
     let lastActivityReport = 0;
-    let reportInProgress = false;
+    let reportingGeneration = null;
     let activityGeneration = 0;
 
     async function reportActivity() {
-        if (!vaultUnlocked || reportInProgress) return;
+        if (!vaultUnlocked) return;
 
         const now = Date.now();
+        const generation = activityGeneration;
+
+        if (reportingGeneration === generation) return;
 
         if (now - lastActivityReport < ACTIVITY_REPORT_INTERVAL) {
             return;
         }
 
-        const generation = activityGeneration;
-
-        reportInProgress = true;
+        reportingGeneration = generation;
         lastActivityReport = now;
 
         try {
             const result = await window.VaultWorkerClient.send("ACTIVITY");
 
-            // Ignore responses belonging to an older vault session.
-            if (
-                !vaultUnlocked ||
-                generation !== activityGeneration
-            ) {
+            if (!vaultUnlocked || generation !== activityGeneration) {
                 return;
             }
 
@@ -40,13 +37,14 @@
                 window.dispatchEvent(new CustomEvent("vault:locked"));
                 window.VaultShell.showView("unlock");
             }
-
         } catch (error) {
             if (generation === activityGeneration) {
                 console.error("Unable to report vault activity:", error);
             }
         } finally {
-            reportInProgress = false;
+            if (reportingGeneration === generation) {
+                reportingGeneration = null;
+            }
         }
     }
 

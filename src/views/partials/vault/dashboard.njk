@@ -51,6 +51,43 @@
         </select>
     </div>
     <br>
+    <hr>
+
+    <section id="vaultSecurityOverview" aria-labelledby="vaultSecurityHeading">
+        <h2 id="vaultSecurityHeading">Vault Security</h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div>
+                <h3>Total Passwords</h3>
+                <p id="securityTotalPasswords">0</p>
+            </div>
+
+            <button type="button" id="filterReusedPasswords">
+                <h3>Reused Passwords</h3>
+                <p id="securityReusedPasswords">0</p>
+            </button>
+
+            <button type="button" id="filterWeakPasswords">
+                <h3>Weak Passwords</h3>
+                <p id="securityWeakPasswords">0</p>
+            </button>
+
+            <div>
+                <h3>Strong Passwords</h3>
+                <p id="securityStrongPasswords">0</p>
+            </div>
+        </div>
+    </section>
+    <hr>
+    <div id="securityFilterStatus" class="hidden items-center justify-between gap-3 mb-4">
+
+        <p id="securityFilterLabel" class="text-sm font-medium"></p>
+
+        <button type="button" id="clearSecurityFilter" class="text-sm text-blue-600 hover:underline">
+            Clear filter
+        </button>
+    </div>
+    <hr>
     <div id="vaultEntries">
         <p>Your vault entries will appear here.</p>
     </div>

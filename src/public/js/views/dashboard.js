@@ -3,6 +3,8 @@
 
     let loadGeneration = 0;
     let searchableEntries = [];
+    let securitySummary = null;
+    let activeSecurityFilter = null;
 
     let entriesContainer;
     let searchInput;
@@ -17,7 +19,19 @@
 
             const matchesType = activeFilter === "all" || entry.type === activeFilter;
 
-            return matchesSearch && matchesType
+            let matchesSecurity = true;
+
+            if (activeSecurityFilter === "reused") {
+                matchesSecurity =
+                    securitySummary?.reusedIds.has(entry.entryId) ?? false;
+            }
+
+            if (activeSecurityFilter === "weak") {
+                matchesSecurity =
+                    securitySummary?.weakIds.has(entry.entryId) ?? false;
+            }
+
+            return matchesSearch && matchesType && matchesSecurity;
         });
 
         filteredEntries.sort((a, b) => {
@@ -69,10 +83,19 @@
             const websiteElement = document.createElement("p");
 
             const isPassword = entry.type === "password";
-            
+
             if (isPassword && entry.website) {
                 websiteElement.textContent = entry.website;
                 websiteElement.className = "vault-entry-website";
+            }
+
+            if (entry.type === "password" && securitySummary?.reusedIds.has(entry.entryId)) {
+                const warning = document.createElement("span");
+
+                warning.textContent = "Reused password";
+                warning.className = "text-amber-600 text-sm font-medium";
+
+                entryElement.appendChild(warning);
             }
 
             linkElement.type = "button";
@@ -114,10 +137,59 @@
         }
     }
 
+    function renderSecurityOverview() {
+        const summary = securitySummary;
+
+        document.getElementById("securityTotalPasswords").textContent =
+            summary?.totalPasswords ?? 0;
+
+        document.getElementById("securityReusedPasswords").textContent =
+            summary?.reusedCount ?? 0;
+
+        document.getElementById("securityWeakPasswords").textContent =
+            summary?.weakCount ?? 0;
+
+        document.getElementById("securityStrongPasswords").textContent =
+            summary?.strongCount ?? 0;
+    }
+
+    function renderSecurityFilterStatus() {
+        const container = document.getElementById("securityFilterStatus");
+        const label = document.getElementById("securityFilterLabel");
+
+        const reusedButton = document.getElementById("filterReusedPasswords");
+        const weakButton = document.getElementById("filterWeakPasswords");
+
+        const isReused = activeSecurityFilter === "reused";
+        const isWeak = activeSecurityFilter === "weak";
+
+        container.classList.toggle("hidden", !activeSecurityFilter);
+        container.classList.toggle("flex", Boolean(activeSecurityFilter));
+
+        label.textContent = isReused
+            ? "Showing reused passwords"
+            : isWeak
+                ? "Showing weak passwords"
+                : "";
+
+        reusedButton.classList.toggle("ring-2", isReused);
+        reusedButton.classList.toggle("ring-amber-500", isReused);
+
+        weakButton.classList.toggle("ring-2", isWeak);
+        weakButton.classList.toggle("ring-red-500", isWeak);
+
+        reusedButton.setAttribute("aria-pressed", String(isReused));
+        weakButton.setAttribute("aria-pressed", String(isWeak));
+    }
+
     async function loadVaultEntries() {
         const generation = ++loadGeneration;
 
         searchableEntries = [];
+        securitySummary = null;
+        activeSecurityFilter = null
+        renderSecurityOverview();
+        renderSecurityFilterStatus();
 
         // Clear previously rendered entries
         entriesContainer.replaceChildren();
@@ -134,13 +206,22 @@
 
             if (generation !== loadGeneration) return;
 
+            const passwordEntries = decryptedEntries.map((payload, index) => ({
+                entryId: entries[index].entryId,
+                type: payload.type,
+                password: payload.type === "password" ? payload.password : undefined
+            }));
+
+            securitySummary = VaultSecurity.analyse(passwordEntries);
+
+
             searchableEntries = decryptedEntries.map((entry, index) => {
                 const isPassword = entry.type === "password";
 
                 const metadata = entries[index]
 
                 return {
-                    entryId: entry.entryId,
+                    entryId: metadata.entryId,
                     type: entry.type,
                     name: (
                         isPassword ? entry.name : entry.title
@@ -152,11 +233,13 @@
             });
 
             renderVaultEntries();
+            renderSecurityOverview();
 
         } catch (error) {
             if (generation !== loadGeneration) return;
 
             searchableEntries = [];
+            securitySummary = null;;
 
             entriesContainer.textContent = "Unable to load vault entries.";
             console.error("Vault entry loading failed:", error);
@@ -206,12 +289,43 @@
                 );
             });
 
+            securitySummary = null;
+            activeSecurityFilter = null;
+            renderSecurityOverview();
+            renderSecurityFilterStatus();
             entriesContainer.replaceChildren();
         });
 
         window.addEventListener("vault:entries-changed", async () => {
             await loadVaultEntries();
         });
+
+        // password security summary clickables
+        document.getElementById("filterReusedPasswords")
+            .addEventListener("click", () => {
+                activeSecurityFilter =
+                    activeSecurityFilter === "reused" ? null : "reused";
+
+                renderVaultEntries();
+                renderSecurityFilterStatus();
+            });
+
+        document.getElementById("filterWeakPasswords")
+            .addEventListener("click", () => {
+                activeSecurityFilter =
+                    activeSecurityFilter === "weak" ? null : "weak";
+
+                renderVaultEntries();
+                renderSecurityFilterStatus();
+            });
+
+        document.getElementById("clearSecurityFilter")
+            .addEventListener("click", () => {
+                activeSecurityFilter = null;
+
+                renderVaultEntries();
+                renderSecurityFilterStatus();
+            });
 
         filterButtons.forEach(button => {
             button.addEventListener("click", () => {
@@ -231,6 +345,9 @@
         lockButton.addEventListener("click", async () => {
             lockButton.disabled = true;
 
+            window.dispatchEvent(new CustomEvent("vault:locked"));
+            window.VaultShell.showView("unlock");
+
             try {
                 const result = await window.VaultWorkerClient.send("LOCK");
 
@@ -238,16 +355,9 @@
                     throw new Error("Unable to confirm vault lock");
                 }
 
-                // clear hidden DOM contents
-                window.dispatchEvent(new CustomEvent("vault:locked"));
-                // clear html contents
-                document.getElementById("vaultEntries").replaceChildren();
-
                 window.VaultSync.notifyLocked();
 
-                // redirect to unlock page
                 statusElement.textContent = "Vault locked";
-                window.VaultShell.showView("unlock");
 
             } catch (error) {
                 console.error("Vault lock failed:", error);
@@ -305,7 +415,7 @@
             statusElement.textContent = "Vault unlocked";
 
             window.dispatchEvent(new CustomEvent("vault:unlocked"));
-            
+
         } catch (error) {
             statusElement.textContent = "Unable to check vault status";
         }

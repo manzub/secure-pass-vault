@@ -6,6 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const message = document.getElementById("createPasswordMessage");
     const passwordInput = document.getElementById("passwordValue");
 
+    const passwordStrength = PasswordStrength.attach(
+        passwordInput,
+        document.getElementById("passwordStrengthContainer"),
+        document.getElementById("passwordStrengthLabel")
+    );
+    
     // password generator options
     const generatorLength = document.getElementById("generatorLength");
     const generatorLowercase = document.getElementById("generatorLowercase");
@@ -27,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
             passwordInput.value = generatedPassword;
             passwordInput.type = "password";
 
+            passwordStrength.update();
+
             message.textContent = ""
 
         } catch (error) {
@@ -41,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("vault:locked", () => {
         saveGeneration++;
         form.reset();
+        passwordStrength.update();
         message.textContent = "";
         saveButton.disabled = false;
     });
@@ -73,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (generation !== saveGeneration) return;
 
             form.reset();
+            passwordStrength.update();
             message.textContent = "";
 
             window.dispatchEvent(

@@ -6,6 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = document.getElementById("editPasswordName");
     const username = document.getElementById("editPasswordUsername");
     const password = document.getElementById("editPasswordValue");
+    const passwordStrength = PasswordStrength.attach(
+        password,
+        document.getElementById("editPasswordStrengthContainer"),
+        document.getElementById("editPasswordStrengthLabel")
+    );
     const website = document.getElementById("editPasswordWebsite");
     const notes = document.getElementById("editPasswordNotes");
 
@@ -33,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             password.value = generatedPassword;
             password.type = "password";
+            passwordStrength.update()
 
             message.textContent = "";
 
@@ -51,6 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function clearForm() {
         currentEntryId = null;
         form.reset();
+        password.type = "password";
+        passwordStrength.update();
         message.textContent = "";
     }
 
@@ -157,6 +165,8 @@ document.addEventListener("DOMContentLoaded", () => {
             password.value = payload.password ?? "";
             website.value = payload.website ?? "";
             notes.value = payload.notes ?? "";
+
+            passwordStrength.update()
 
             message.textContent = "";
 
