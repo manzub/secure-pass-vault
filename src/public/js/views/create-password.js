@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("passwordStrengthContainer"),
         document.getElementById("passwordStrengthLabel")
     );
-    
+
     // password generator options
     const generatorLength = document.getElementById("generatorLength");
     const generatorLowercase = document.getElementById("generatorLowercase");
@@ -46,16 +46,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let saveGeneration = 0;
 
-    document.addEventListener("vault:locked", () => {
+    function resetCreateView() {
         saveGeneration++;
+
         form.reset();
+
+        passwordInput.value = "";
+        passwordInput.type = "password";
+
         passwordStrength.update();
+
         message.textContent = "";
         saveButton.disabled = false;
+    }
+
+
+    // event listeners
+    window.addEventListener("vault:locked", () => {
+        resetCreateView()
+    });
+
+    window.addEventListener("vault:view-leaving", (event) => {
+        if (event.detail?.from !== "createPassword") return;
+
+        resetCreateView();
     });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        if (saveButton.disabled) return;
 
         const generation = ++saveGeneration;
 
@@ -80,10 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
             await VaultEntryClient.createEntry(payload);
 
             if (generation !== saveGeneration) return;
-
-            form.reset();
-            passwordStrength.update();
-            message.textContent = "";
 
             window.dispatchEvent(
                 new CustomEvent("vault:entries-changed")

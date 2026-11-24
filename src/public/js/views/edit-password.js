@@ -62,6 +62,15 @@ document.addEventListener("DOMContentLoaded", () => {
         message.textContent = "";
     }
 
+    function resetEditView() {
+        loadGeneration++;
+        saveGeneration++;
+
+        saveButton.disabled = false;
+
+        clearForm();
+    }
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -197,9 +206,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("vault:locked", () => {
-        saveGeneration++;
-        loadGeneration++;
-        saveButton.disabled = false;
-        clearForm();
+        resetEditView();
+    });
+
+    window.addEventListener("vault:view-leaving", (event) => {
+        if (event.detail?.from !== "editPassword") return;
+
+        resetEditView();
     });
 });

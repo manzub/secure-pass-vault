@@ -14,6 +14,18 @@
 
         let loadGeneration = 0;
 
+        function clearNoteDetails() {
+            loadGeneration++;
+            currentEntryId = null;
+
+            titleElement.textContent = "";
+            contentElement.textContent = "";
+            messageElement.textContent = "";
+
+            deleteButton.disabled = true;
+            editButton.disabled = true;
+        }
+
         window.addEventListener("vault:note-selected", async (event) => {
             const generation = ++loadGeneration;
 
@@ -38,8 +50,6 @@
                     throw new Error("Requested entry is not a note");
                 }
 
-                if (generation !== loadGeneration) return;
-
                 titleElement.textContent = note.title || "Untitled";
                 contentElement.textContent = note.content || "";
 
@@ -50,27 +60,30 @@
 
             } catch (error) {
                 if (generation !== loadGeneration) return;
-                
+
+                clearNoteDetails();
+
                 messageElement.textContent =
                     error.message || "Unable to load note.";
             }
         });
 
         window.addEventListener("vault:locked", () => {
-            currentEntryId = null;
-            loadGeneration++;
+            clearNoteDetails();
+        });
 
-            titleElement.textContent = "";
-            contentElement.textContent = "";
-            messageElement.textContent = "";
+        window.addEventListener("vault:view-leaving", (event) => {
+            if (event.detail?.from !== "noteDetail") return;
 
-            deleteButton.disabled = true;
-            editButton.disabled = true;
+            clearNoteDetails();
         });
 
         // delete button
         deleteButton.addEventListener("click", async () => {
-            if (!currentEntryId) return;
+            if (!currentEntryId || deleteButton.disabled) return;
+
+            const entryId = currentEntryId;
+            const generation = loadGeneration;
 
             const confirmed = window.confirm(
                 "Permanently delete this note? This cannot be undone."
@@ -79,23 +92,32 @@
             if (!confirmed) return;
 
             deleteButton.disabled = true;
+            editButton.disabled = true;
+
             messageElement.textContent = "Deleting note...";
 
             try {
-                await window.VaultEntryClient.deleteEntry(currentEntryId);
+                await window.VaultEntryClient.deleteEntry(entryId);
 
-                currentEntryId = null;
-                titleElement.textContent = "";
-                contentElement.textContent = "";
-                messageElement.textContent = "";
+                if (generation !== loadGeneration) return;
 
-                window.dispatchEvent(new CustomEvent("vault:entries-changed"));
+                clearNoteDetails();
+
+                window.dispatchEvent(
+                    new CustomEvent("vault:entries-changed")
+                );
+
                 window.VaultShell.showView("dashboard");
 
             } catch (error) {
-                messageElement.textContent =
-                    error.message || "Unable to delete note.";
+                if (generation !== loadGeneration) return;
+
+                console.error("Unable to delete note:", error);
+
+                messageElement.textContent = "Unable to delete note.";
+
                 deleteButton.disabled = false;
+                editButton.disabled = false;
             }
         });
 

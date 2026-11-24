@@ -14,7 +14,7 @@ window.VaultSecurity = {
         const strongIds = new Set();
 
         for (const entry of passwords) {
-            const score = zxcvbn(entry.password).score;
+            const { score } = PasswordStrength.analyse(entry.password);
 
             if (score <= 1) {
                 weakIds.add(entry.entryId);

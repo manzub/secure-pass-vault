@@ -14,24 +14,37 @@
         let loadGeneration = 0;
         let saveGeneration = 0;
 
+        function resetEditView() {
+            loadGeneration++;
+            saveGeneration++;
+
+            currentEntryId = null;
+
+            form.reset();
+
+            titleInput.value = "";
+            contentInput.value = "";
+
+            saveButton.disabled = true;
+            messageElement.textContent = "";
+        }
+
         window.addEventListener("vault:note-edit", async (event) => {
             const entryId = event.detail?.entryId;
             if (!entryId) return;
 
-            const generation = ++loadGeneration;
-            currentEntryId = null;
-            saveGeneration++;
+            resetEditView();
 
-            form.reset();
-            saveButton.disabled = true;
+            const generation = loadGeneration;
+
             messageElement.textContent = "Loading note...";
 
             try {
-                const encryptedEntry =
-                    await window.VaultEntryClient.getEntry(entryId);
+                const encryptedEntry = await window.VaultEntryClient.getEntry(entryId);
 
-                const note =
-                    await window.VaultEntryClient.decryptEntry(encryptedEntry);
+                if (generation !== loadGeneration) return;
+
+                const note = await window.VaultEntryClient.decryptEntry(encryptedEntry);
 
                 // Ignore results from an older request.
                 if (generation !== loadGeneration) return;
@@ -50,25 +63,27 @@
             } catch (error) {
                 if (generation !== loadGeneration) return;
 
-                messageElement.textContent =
-                    error.message || "Unable to load note.";
+                resetEditView();
+
+                console.error("Unable to load note:", error);
+                messageElement.textContent = "Unable to load note.";
             }
         });
 
         window.addEventListener("vault:locked", () => {
-            loadGeneration++;
-            saveGeneration++;
-            currentEntryId = null;
+            resetEditView();
+        });
 
-            form.reset();
-            saveButton.disabled = true;
-            messageElement.textContent = "";
+        window.addEventListener("vault:view-leaving", (event) => {
+            if (event.detail?.from !== "editNote") return;
+
+            resetEditView();
         });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            if (!currentEntryId) return;
+            if (!currentEntryId || saveButton.disabled) return;
 
             const entryId = currentEntryId;
             const title = titleInput.value.trim();
@@ -93,12 +108,6 @@
 
                 if (generation !== saveGeneration) return;
 
-                currentEntryId = null;
-                loadGeneration++;
-
-                form.reset();
-                messageElement.textContent = "";
-
                 window.dispatchEvent(new CustomEvent("vault:entries-changed"));
 
                 // Return to the updated note, not the dashboard.
@@ -109,8 +118,8 @@
             } catch (error) {
                 if (generation !== saveGeneration) return;
 
-                messageElement.textContent =
-                    error.message || "Unable to save changes.";
+                console.error("Unable to update note:", error);
+                messageElement.textContent = "Unable to save changes.";
             } finally {
                 if (generation === saveGeneration) {
                     saveButton.disabled = false;

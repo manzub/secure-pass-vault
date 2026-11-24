@@ -2,6 +2,7 @@
     "use strict";
 
     let sessionExpiryHandled = false;
+    let currentView = null;
 
     function showView(viewName) {
         if (sessionExpiryHandled) return;
@@ -17,11 +18,42 @@
             editPassword: document.getElementById("editPasswordView")
         }
 
+        if (!Object.hasOwn(views, viewName) || !views[viewName]) {
+            console.warn("Invalid vault view:", viewName);
+            return;
+        }
+
+        if (currentView === viewName) return;
+
+        const previousView = currentView;
+
+        if (previousView !== null) {
+            window.dispatchEvent(
+                new CustomEvent("vault:view-leaving", {
+                    detail: {
+                        from: previousView,
+                        to: viewName
+                    }
+                })
+            );
+        }
+
         for (const [name, element] of Object.entries(views)) {
             if (element) {
                 element.hidden = name !== viewName;
             }
         }
+
+        currentView = viewName;
+
+        window.dispatchEvent(
+            new CustomEvent("vault:view-entered", {
+                detail: {
+                    from: previousView,
+                    to: currentView
+                }
+            })
+        );
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -124,6 +156,9 @@
     });
 
     window.VaultShell = {
-        showView
+        showView,
+        getCurrentView() {
+            return currentView;
+        }
     };
 })();

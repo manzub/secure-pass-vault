@@ -40,7 +40,8 @@ window.PasswordStrength = {
                 return;
             }
 
-            const score = zxcvbn(password).score;
+            const result = window.PasswordStrength.analyse(password);
+            const score = result.score;
 
             label.textContent = labels[score];
 
@@ -59,5 +60,19 @@ window.PasswordStrength = {
         update();
 
         return { update };
-    }
+    },
+
+    analyse(password) {
+        if (typeof password !== "string" || !password.length) {
+            return null;
+        }
+
+        const result = zxcvbn(password);
+
+        return {
+            score: result.score,
+            warning: result.feedback.warning,
+            suggestions: [...result.feedback.suggestions]
+        };
+    },
 };

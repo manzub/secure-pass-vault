@@ -41,28 +41,36 @@
 {% endblock %}
 
 {% block additional_scripts %}
-<script src="/public/js/core/vault-worker-client.js"></script>
-<script src="/public/js/core/auth-fetch.js"></script>
-<script src="/public/js/core/vault-auto-lock.js" defer></script>
-<script src="/public/js/core/vault-entry-client.js"></script>
-<script src="/public/js/core/vault-shell.js"></script>
-<script src="/public/js/core/vault-sync.js"></script>
-<script src="/public/vendor/zxcvbn.js"></script>
-<script src="/public/js/utils/password-strength.js"></script>
+{# Third-party dependencies #}
+<script src="/public/vendor/zxcvbn.js" defer></script>
 
-{# vault actions #}
+{# Core #}
+<script src="/public/js/core/vault-worker-client.js" defer></script>
+<script src="/public/js/core/auth-fetch.js" defer></script>
+<script src="/public/js/core/vault-entry-client.js" defer></script>
+<script src="/public/js/core/vault-shell.js" defer></script>
+<script src="/public/js/core/vault-sync.js" defer></script>
+<script src="/public/js/core/vault-auto-lock.js" defer></script>
+
+{# Utilities #}
 <script src="/public/js/utils/password-generator.js" defer></script>
+<script src="/public/js/utils/password-strength.js" defer></script>
+<script src="/public/js/utils/password-reuse.js" defer></script>
+<script src="/public/js/utils/vault-security.js" defer></script>
+
+{# Authentication views #}
+<script src="/public/js/views/unlock.js" defer></script>
+
+{# Password views #}
 <script src="/public/js/views/create-password.js" defer></script>
 <script src="/public/js/views/password-detail.js" defer></script>
 <script src="/public/js/views/edit-password.js" defer></script>
 
-<script src="/public/js/views/edit-note.js"></script>
-<script src="/public/js/views/note-detail.js"></script>
-<script src="/public/js/views/create-note.js"></script>
+{# Note views #}
+<script src="/public/js/views/create-note.js" defer></script>
+<script src="/public/js/views/note-detail.js" defer></script>
+<script src="/public/js/views/edit-note.js" defer></script>
 
-{# core #}
-<script src="/public/js/views/unlock.js"></script>
-<script src="/public/js/utils/password-reuse.js"></script>
-<script src="/public/js/utils/vault-security.js"></script>
-<script src="/public/js/views/dashboard.js"></script>
+{# Dashboard #}
+<script src="/public/js/views/dashboard.js" defer></script>
 {% endblock %}

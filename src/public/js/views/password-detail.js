@@ -8,10 +8,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const notes = document.getElementById("detailPasswordNotes");
     const message = document.getElementById("detailPasswordMessage");
 
+    const securitySection = document.getElementById("detailPasswordSecurity");
+    const strengthLabel = document.getElementById("detailPasswordStrengthLabel");
+    const strengthBars = document.getElementById("detailPasswordStrengthBars");
+    const securityWarning = document.getElementById("detailPasswordSecurityWarning");
+    const recommendations = document.getElementById("detailPasswordRecommendations");
+    const suggestions = document.getElementById("detailPasswordSuggestions");
+
     if (!name || !password) return;
 
     let loadGeneration = 0;
     let currentEntryId = null;
+
+    function clearPasswordSecurity() {
+        securitySection.classList.add("hidden");
+
+        strengthLabel.textContent = "";
+
+        for (const bar of strengthBars.children) {
+            bar.className = "h-2 rounded bg-gray-200";
+        }
+
+        securityWarning.textContent = "";
+        securityWarning.classList.add("hidden");
+
+        suggestions.replaceChildren();
+        recommendations.classList.add("hidden");
+    }
 
     function clearPasswordDetails() {
         currentEntryId = null;
@@ -25,6 +48,63 @@ document.addEventListener("DOMContentLoaded", () => {
         message.textContent = "";
 
         document.getElementById("detailPasswordToggle").textContent = "Show";
+
+        clearPasswordSecurity()
+    }
+
+    function renderPasswordSecurity(passwordValue) {
+        clearPasswordSecurity();
+
+        const result = PasswordStrength.analyse(passwordValue);
+
+        if (!result) return;
+
+        const labels = [
+            "Very weak",
+            "Weak",
+            "Fair",
+            "Strong",
+            "Very strong"
+        ];
+
+        const colours = [
+            "bg-red-600",
+            "bg-red-500",
+            "bg-amber-500",
+            "bg-green-500",
+            "bg-green-600"
+        ];
+
+        strengthLabel.textContent = labels[result.score];
+
+        const filledBars = Math.max(1, result.score);
+
+        Array.from(strengthBars.children).forEach((bar, index) => {
+            bar.className = `h-2 rounded ${index < filledBars
+                ? colours[result.score]
+                : "bg-gray-200"
+                }`;
+        });
+
+        if (result.warning) {
+            securityWarning.textContent = result.warning;
+            securityWarning.classList.remove("hidden");
+        }
+
+        for (const suggestion of result.suggestions) {
+            const item = document.createElement("li");
+
+            item.textContent = suggestion;
+
+            suggestions.appendChild(item);
+        }
+
+        recommendations.classList.toggle(
+            "hidden",
+            result.suggestions.length === 0
+        );
+
+        securitySection.classList.remove("hidden");
     }
 
     window.addEventListener("vault:password-selected", async (event) => {
@@ -59,6 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
             website.textContent = payload.website ?? "";
             notes.textContent = payload.notes ?? "";
 
+            renderPasswordSecurity(password.value)
+
             message.textContent = "";
 
         } catch (error) {
@@ -70,6 +152,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("vault:locked", () => {
+        loadGeneration++;
+        clearPasswordDetails();
+    });
+
+    window.addEventListener("vault:view-leaving", (event) => {
+        if (event.detail?.from !== "passwordDetail") return;
+
         loadGeneration++;
         clearPasswordDetails();
     });

@@ -8,20 +8,36 @@
         const saveButton = document.getElementById("createNoteSaveButton");
         const messageElement = document.getElementById("createNoteMessage");
 
+        if (!form) return;
+
         let saveGeneration = 0;
 
-        window.addEventListener("vault:locked", () => {
-            saveGeneration++
+        function resetCreateView() {
+            saveGeneration++;
 
             form.reset();
+
+            titleInput.value = "";
+            contentInput.value = "";
+
             messageElement.textContent = "";
             saveButton.disabled = false;
+        }
+
+        window.addEventListener("vault:locked", () => {
+            resetCreateView();
         });
 
-        if (!form) return;
+        window.addEventListener("vault:view-leaving", (event) => {
+            if (event.detail?.from !== "createNote") return;
+
+            resetCreateView();
+        });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
+
+            if (saveButton.disabled) return;
 
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
@@ -45,17 +61,15 @@
 
                 if (generation !== saveGeneration) return;
 
-                form.reset();
-                messageElement.textContent = "";
-
                 window.dispatchEvent(new CustomEvent("vault:entries-changed"));
+
                 window.VaultShell.showView("dashboard");
 
             } catch (error) {
                 if (generation !== saveGeneration) return;
 
-                messageElement.textContent =
-                    error.message || "Unable to save note.";
+                console.error("Unable to create note:", error);
+                messageElement.textContent = "Unable to save note.";
             } finally {
                 if (generation === saveGeneration) {
                     saveButton.disabled = false;
