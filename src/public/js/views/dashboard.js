@@ -8,6 +8,7 @@
 
     let entriesContainer;
     let searchInput;
+    let filterButtons;
     let activeFilter = "all";
     let activeSort = "name-asc";
 
@@ -182,6 +183,25 @@
         weakButton.setAttribute("aria-pressed", String(isWeak));
     }
 
+    function applySecurityFilter(filter) {
+        activeSecurityFilter =
+            activeSecurityFilter === filter ? null : filter;
+
+        if (activeSecurityFilter) {
+            activeFilter = "password";
+        }
+
+        filterButtons.forEach(button => {
+            button.setAttribute(
+                "aria-pressed",
+                String(button.dataset.filter === activeFilter)
+            );
+        });
+
+        renderVaultEntries();
+        renderSecurityFilterStatus();
+    }
+
     async function loadVaultEntries() {
         const generation = ++loadGeneration;
 
@@ -252,7 +272,7 @@
         const statusElement = document.getElementById("vaultStatus");
         const lockButton = document.getElementById("lockVaultButton");
         const logoutButton = document.getElementById("logoutButton")
-        const filterButtons = document.querySelectorAll("#vaultFilters [data-filter]");
+        filterButtons = document.querySelectorAll("#vaultFilters [data-filter]");
         const sortSelect = document.getElementById("vaultSort");
 
 
@@ -301,35 +321,27 @@
         });
 
         // password security summary clickables
-        document.getElementById("filterReusedPasswords")
-            .addEventListener("click", () => {
-                activeSecurityFilter =
-                    activeSecurityFilter === "reused" ? null : "reused";
+        document.getElementById("filterReusedPasswords").addEventListener("click", () => {
+            applySecurityFilter("reused");
+        });
 
-                renderVaultEntries();
-                renderSecurityFilterStatus();
-            });
+        document.getElementById("filterWeakPasswords").addEventListener("click", () => {
+            applySecurityFilter("weak");
+        });
 
-        document.getElementById("filterWeakPasswords")
-            .addEventListener("click", () => {
-                activeSecurityFilter =
-                    activeSecurityFilter === "weak" ? null : "weak";
+        document.getElementById("clearSecurityFilter").addEventListener("click", () => {
+            activeSecurityFilter = null;
 
-                renderVaultEntries();
-                renderSecurityFilterStatus();
-            });
-
-        document.getElementById("clearSecurityFilter")
-            .addEventListener("click", () => {
-                activeSecurityFilter = null;
-
-                renderVaultEntries();
-                renderSecurityFilterStatus();
-            });
+            renderVaultEntries();
+            renderSecurityFilterStatus();
+        });
 
         filterButtons.forEach(button => {
             button.addEventListener("click", () => {
                 activeFilter = button.dataset.filter;
+
+                activeSecurityFilter = null;
+                renderSecurityFilterStatus();
 
                 filterButtons.forEach(filterButton => {
                     filterButton.setAttribute(
